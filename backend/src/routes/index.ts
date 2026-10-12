@@ -1,7 +1,10 @@
 import { Router } from 'express';
+import { authRouter } from './auth';
 
 /**
- * Aggregation point for every `/api` route. Phase 3+ mounts the auth,
- * campaigns, submissions and creators routers here.
+ * Aggregation point for every `/api` route. Phase 4+ mounts the campaigns,
+ * submissions and creators routers here.
  */
 export const apiRouter = Router();
+
+apiRouter.use('/auth', authRouter);
