@@ -14,7 +14,7 @@
 |---|---|---|
 | 0 | Repository & tooling setup | ✅ Done |
 | 1 | Domain core (pure logic) + unit tests | ✅ Done |
-| 2 | Database, models, app skeleton | ⏳ Pending |
+| 2 | Database, models, app skeleton | ✅ Done |
 | 3 | Authentication & authorization | ⏳ Pending |
 | 4 | Brand: campaigns | ⏳ Pending |
 | 5 | Creator: browse, submit, earnings | ⏳ Pending |
@@ -92,15 +92,22 @@ Memed/
 │   └── PHASE_NOTES.md       ← this file
 ├── backend/
 │   ├── src/
-│   │   ├── config/env.ts    ← reads & validates settings (Phase 0)
-│   │   └── domain/          ← THE BRAIN: pure logic (Phase 1)
-│   │       ├── payout.ts
-│   │       ├── milestones.ts
-│   │       ├── postUrl.ts
-│   │       └── spike.ts
+│   │   ├── app.ts           ← builds the Express app (no listen) (Phase 2)
+│   │   ├── server.ts        ← connects DB, listens, graceful shutdown (Phase 2)
+│   │   ├── config/          ← env.ts (Phase 0), db.ts + logger.ts (Phase 2)
+│   │   ├── domain/          ← THE BRAIN: pure logic (Phase 1)
+│   │   │   ├── payout.ts
+│   │   │   ├── milestones.ts
+│   │   │   ├── postUrl.ts
+│   │   │   └── spike.ts
+│   │   ├── errors/          ← AppError + subclasses (Phase 2)
+│   │   ├── middleware/      ← asyncHandler, validate, notFound, errorHandler (Phase 2)
+│   │   ├── models/          ← User, Campaign, Submission + toJSON transform (Phase 2)
+│   │   └── routes/          ← health + /api aggregator (Phase 2)
 │   ├── tests/
 │   │   ├── unit/            ← Phase 1 tests
-│   │   ├── integration/     ← empty (Phase 3+)
+│   │   ├── integration/     ← health, models, errorHandling (Phase 2)
+│   │   ├── helpers/mongo.ts ← in-memory replica set helper (Phase 2)
 │   │   └── setup.ts
 │   ├── package.json  tsconfig.json  tsconfig.test.json  jest.config.ts
 │   ├── eslint.config.mjs  .prettierrc  .dockerignore  .env.example
@@ -114,7 +121,7 @@ Memed/
 | Branch | Contains | Status |
 |---|---|---|
 | `main` | Phase 0 | Unchanged (merge target) |
-| `backend-dev` | Phase 0 + Phase 1 + docs | Pushed to `origin/backend-dev`; awaiting review |
+| `backend-dev` | Phase 0 + Phase 1 + Phase 2 + docs | Pushed to `origin/backend-dev`; awaiting review |
 
 `backend-dev` is meant to be reviewed before merging into `main`.
 
@@ -128,7 +135,7 @@ server yet.
 | File | What it is, simply |
 |---|---|
 | `.gitignore` | Tells git to ignore junk: `node_modules`, build output, `.env` secrets, logs. Keeps `.env.example`. |
-| `backend/package.json` | Lists the libraries used and the **commands** you run (see §8). |
+| `backend/package.json` | Lists the libraries used and the **commands** you run (see §9). |
 | `backend/tsconfig.json` | TypeScript rules. `strict: true` makes TS catch many bugs before runtime. `noUncheckedIndexedAccess` makes array access safer. |
 | `backend/tsconfig.test.json` | A TS config used only for tests (includes the `tests/` folder). |
 | `backend/jest.config.ts` | Test-runner config (Jest). Coverage rules were added here in Phase 1. |
@@ -224,24 +231,55 @@ coverage drops.
 
 ---
 
-## 8. How to run / verify (from `backend/`)
+## 8. Phase 2 — Database, models, app skeleton
 
-| Command | What it does |
+The app now has a real (if small) HTTP surface. Everything follows the spec's layering
+(routes → middleware → models), with the pure domain untouched.
+
+| Piece | What it is |
 |---|---|
-| `npm test` | Runs all unit tests (fast). |
-| `npm run test:unit` | Unit tests only. |
-| `npm run test:integration` | Integration tests (none yet). |
-| `npm run test:coverage` | Tests + coverage; **fails** unless `payout.ts`/`milestones.ts` are 100%. |
-| `npm run build` | Compiles TypeScript to `dist/` (catches type errors). |
-| `npm run lint` | Style / quality check. |
-| `npm run dev` | **Not usable yet** — points at `src/server.ts`, which arrives in Phase 2. |
+| `config/db.ts` | `connectDb()` / `disconnectDb()` with `serverSelectionTimeoutMS` — fails fast, never hangs. |
+| `models/User.ts` | name, email (unique, lowercased), `passwordHash` (`select: false`), role enum. |
+| `models/Campaign.ts` | brand ref, platform, budget/spent (integer-validated), milestones subdocs, status, `{status, createdAt}` index, `remaining` virtual. |
+| `models/Submission.ts` | campaign/creator refs, `normalizedUrl` **globally unique** (D11), views/entitled/paid (integer, ≥ 0), `capped` virtual. |
+| `models/toJSON.ts` | shared transform: API returns `id`, never `_id`/`__v`/`passwordHash` (D18). |
+| `errors/` | `AppError` + `ValidationError`, `UnauthenticatedError`, `ForbiddenError`, `NotFoundError`, `ConflictError`, `RateLimitedError`. |
+| `middleware/` | `asyncHandler` (no floating promises), `validate` (zod → 400 with per-field details), `notFound`, `errorHandler` (maps AppError/zod/Mongoose/duplicate-key/JWT to the §5.1 envelope; 500s never leak). |
+| `app.ts` | helmet, CORS allowlist from env, JSON body limit 100kb, `trust proxy`, `/health`, `/api` mount, notFound + errorHandler. |
+| `server.ts` | connect DB → listen; SIGTERM/SIGINT graceful shutdown; `unhandledRejection` logged. |
+| `routes/health.ts` | `GET /health` → `{ status: "ok", db: <state> }`. |
 
-There are **no HTTP endpoints to hit yet** (no `/health`, no auth). The API table in the README is
-the *plan*, not live.
+**Tests (integration, in-memory Mongo replica set):** `health.test.ts` (200 + error envelope),
+`models.test.ts` (unique indexes, validators, D18 serialization, compound index),
+`errorHandling.test.ts` (every error mapping + the validation middleware).
+
+Result: **122 tests passing** (102 unit + 20 integration), coverage gate still 100% on
+`payout.ts`/`milestones.ts`, build + lint + prettier clean.
 
 ---
 
-## 9. Change cheat-sheet (decision → file)
+## 9. How to run / verify (from `backend/`)
+
+| Command | What it does |
+|---|---|
+| `npm test` | Runs all unit + integration tests. |
+| `npm run test:unit` | Unit tests only. |
+| `npm run test:integration` | Integration tests only (in-memory Mongo replica set). |
+| `npm run test:coverage` | Tests + coverage; **fails** unless `payout.ts`/`milestones.ts` are 100%. |
+| `npm run build` | Compiles TypeScript to `dist/` (catches type errors). |
+| `npm run lint` | Style / quality check. |
+| `npm run dev` | Starts the API (needs a MongoDB **replica set** reachable at `MONGODB_URI`). |
+| `npm start` | Runs the compiled `dist/server.js` (after `npm run build`). |
+
+`GET /health` is live (try `curl http://localhost:4000/health`). Everything else in the README's
+API table is still the *plan* — auth and the rest arrive in Phase 3+.
+
+Integration tests boot an in-memory MongoDB replica set (`mongodb-memory-server`). The first run
+downloads the mongod binary (~330 MB) into `~/.cache/mongodb-binaries`; later runs are fast.
+
+---
+
+## 10. Change cheat-sheet (decision → file)
 
 | If someone asks to change… | Go to |
 |---|---|
@@ -255,7 +293,7 @@ the *plan*, not live.
 
 ---
 
-## 10. Decisions made (resolved)
+## 11. Decisions made (resolved)
 
 - **Instagram `/reel/` vs `/reels/`:** RESOLVED — `/reels/<id>` is canonicalized to `/reel/<id>`, so
   one reel produces exactly one normalized URL (honours D11). Both spellings are still accepted; a
@@ -267,11 +305,10 @@ the *plan*, not live.
 
 ---
 
-## 11. What's next
+## 12. What's next
 
 Still to build, in order (see the spec for detail):
 
-- **Phase 2:** MongoDB models, Express app, first route `GET /health`.
 - **Phase 3:** signup / login / JWT auth.
 - **Phase 4:** brand campaign endpoints.
 - **Phase 5:** creator browse / submit / earnings.
@@ -280,5 +317,5 @@ Still to build, in order (see the spec for detail):
 - **Phase 7:** frontend. **Phase 8:** Redis cache. **Phase 9:** real spike detection.
   **Phase 10:** Docker. **Phase 11:** deploy. **Phase 12:** docs & final QA.
 
-Phase 2 will need a MongoDB **replica set** (Atlas M0 or the Docker compose Mongo) for the eventual
-transactions; until then all tests run with no database.
+Running the API locally needs a MongoDB **replica set** (Atlas M0 or the Docker compose Mongo);
+the test suite uses an in-memory one, so tests need nothing external.
