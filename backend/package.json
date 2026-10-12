@@ -11,6 +11,7 @@
     "test": "jest --passWithNoTests",
     "test:unit": "jest tests/unit --passWithNoTests",
     "test:integration": "jest tests/integration --passWithNoTests",
+    "test:coverage": "jest --coverage --passWithNoTests",
     "lint": "eslint \"src/**/*.ts\""
   },
   "engines": {

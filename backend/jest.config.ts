@@ -10,6 +10,13 @@ const config: Config = {
   transform: {
     '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.test.json' }],
   },
+  // Phase 1 exit criteria: 100% coverage on the pure payout and ladder logic.
+  // `npm run test:coverage` enforces the threshold below.
+  collectCoverageFrom: ['src/domain/payout.ts', 'src/domain/milestones.ts'],
+  coverageDirectory: 'coverage',
+  coverageThreshold: {
+    global: { branches: 100, functions: 100, lines: 100, statements: 100 },
+  },
   clearMocks: true,
   verbose: true,
 };
