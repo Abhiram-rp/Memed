@@ -17,14 +17,26 @@ describe('validateAndNormalizePostUrl — Instagram', () => {
     expect(
       validateAndNormalizePostUrl('https://www.instagram.com/reel/AbC-123_x', 'instagram'),
     ).toEqual({ ok: true, normalized: 'https://instagram.com/reel/AbC-123_x' });
-    expect(validateAndNormalizePostUrl('https://instagram.com/reels/XYZ', 'instagram')).toEqual({
-      ok: true,
-      normalized: 'https://instagram.com/reels/XYZ',
-    });
     expect(validateAndNormalizePostUrl('https://instagram.com/tv/XYZ', 'instagram')).toEqual({
       ok: true,
       normalized: 'https://instagram.com/tv/XYZ',
     });
+  });
+
+  it('canonicalizes the /reels/ alias to /reel/ so a reel has one URL', () => {
+    const variants = [
+      'https://instagram.com/reel/XYZ',
+      'https://instagram.com/reels/XYZ',
+      'https://www.instagram.com/reels/XYZ/',
+      'https://instagram.com/someuser/reel/XYZ',
+      'https://instagram.com/someuser/reels/XYZ?igsh=abc',
+    ];
+    for (const url of variants) {
+      expect(validateAndNormalizePostUrl(url, 'instagram')).toEqual({
+        ok: true,
+        normalized: 'https://instagram.com/reel/XYZ',
+      });
+    }
   });
 
   it('drops a username prefix', () => {

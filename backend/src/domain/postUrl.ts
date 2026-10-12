@@ -53,7 +53,10 @@ function normalizeInstagram(url: URL): PostUrlResult {
     return { ok: false, reason: 'URL is not a link to an Instagram post, reel or IGTV video' };
   }
 
-  return { ok: true, normalized: `https://instagram.com/${type}/${id}` };
+  // `/reels/<id>` is an alias of `/reel/<id>`: collapse them so one reel has a
+  // single normalized URL and cannot be submitted twice under two spellings (D11).
+  const canonicalType = type === 'reels' ? 'reel' : type;
+  return { ok: true, normalized: `https://instagram.com/${canonicalType}/${id}` };
 }
 
 function normalizeYouTube(url: URL): PostUrlResult {
