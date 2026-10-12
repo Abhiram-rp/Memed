@@ -12,7 +12,9 @@ const envSchema = z
     MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
     JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
     JWT_EXPIRES_IN: z.string().min(1).default('7d'),
-    CORS_ORIGIN: z.string().default('http://localhost:3000'),
+    // No default here: a default would mask a missing value in production.
+    // The development fallback is applied after the production check below.
+    CORS_ORIGIN: z.string().optional(),
     REDIS_URL: z.string().min(1).optional(),
     CAMPAIGN_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(30),
     SPIKE_MIN_DELTA: z.coerce.number().int().nonnegative().default(10000),
@@ -20,7 +22,10 @@ const envSchema = z
   })
   .superRefine((value, ctx) => {
     if (value.NODE_ENV === 'production') {
-      const origins = value.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean);
+      const origins = (value.CORS_ORIGIN ?? '')
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean);
       if (origins.length === 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -29,7 +34,11 @@ const envSchema = z
         });
       }
     }
-  });
+  })
+  .transform((value) => ({
+    ...value,
+    CORS_ORIGIN: value.CORS_ORIGIN ?? 'http://localhost:3000',
+  }));
 
 export type Env = z.infer<typeof envSchema>;
 
