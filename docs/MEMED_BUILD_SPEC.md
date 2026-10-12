@@ -73,7 +73,9 @@ These are final. Implement exactly as written and copy them into the README unde
 ```
 memed/
 ├── README.md
-├── MEMED_BUILD_SPEC.md          (this file)
+├── docs/
+│   ├── MEMED_BUILD_SPEC.md      (this file — authoritative)
+│   └── PHASE_NOTES.md           # phase-by-phase working notes
 ├── docker-compose.yml
 ├── .gitignore
 ├── backend/
@@ -364,7 +366,7 @@ Each phase lists **Tasks**, **Exit criteria**, and **Commit checkpoints**.
 2. `domain/milestones.ts` — `normalizeMilestones(input): Milestone[]` (sort ascending by `views`) and `validateMilestones(input, budget)` implementing D8 + D9. Return structured errors (path + message) usable by the zod layer.
 3. `domain/postUrl.ts` — `validateAndNormalizePostUrl(url, platform): { ok: true, normalized } | { ok: false, reason }`:
    - Parse with `new URL`; protocol must be `http:` or `https:`.
-   - **Instagram:** host `instagram.com` or `www.instagram.com`; path matches `/p/<id>`, `/reel/<id>`, `/reels/<id>`, or `/tv/<id>` (optionally preceded by `/<username>/`). Normalized form: `https://instagram.com/<type>/<id>` (lowercase host, drop query/hash/trailing slash; keep id case).
+   - **Instagram:** host `instagram.com` or `www.instagram.com`; path matches `/p/<id>`, `/reel/<id>`, `/reels/<id>`, or `/tv/<id>` (optionally preceded by `/<username>/`). Normalized form: `https://instagram.com/<type>/<id>` (lowercase host, drop query/hash/trailing slash; keep id case; the `/reels/` alias canonicalizes to `/reel/` so one reel has a single normalized URL — D11).
    - **YouTube:** hosts `youtube.com`, `www.youtube.com`, `m.youtube.com`, `youtu.be`. Accept `/watch?v=<id>`, `/shorts/<id>`, `youtu.be/<id>`. Normalized form: `https://youtube.com/watch?v=<id>` for all (shorts and youtu.be normalize to the same `watch?v=` form so one video can't be double-submitted). Video id = `[A-Za-z0-9_-]{6,20}`.
 4. `domain/spike.ts` — stub now, implemented in Phase 10 (export the type + function signature so the service can call it).
 5. **Unit tests (Jest)** — see Section 8 for the full required list.

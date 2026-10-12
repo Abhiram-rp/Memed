@@ -16,8 +16,8 @@ pages) post content for those campaigns on Instagram or YouTube. Creators are pa
   sum of milestones).
 - Total payouts for a campaign must **never exceed** the campaign's budget.
 
-> `MEMED_BUILD_SPEC.md` (repo root) is the single source of truth for this project. If anything in
-> this README conflicts with it, the spec wins.
+> `docs/MEMED_BUILD_SPEC.md` is the single source of truth for this project. If anything in this
+> README conflicts with it, the spec wins.
 
 ---
 
@@ -54,7 +54,9 @@ pages) post content for those campaigns on Instagram or YouTube. Creators are pa
 ```
 memed/
 ├── README.md
-├── MEMED_BUILD_SPEC.md
+├── docs/
+│   ├── MEMED_BUILD_SPEC.md     # authoritative build spec
+│   └── PHASE_NOTES.md          # phase-by-phase working notes
 ├── docker-compose.yml          (Phase 10)
 ├── .gitignore
 ├── backend/

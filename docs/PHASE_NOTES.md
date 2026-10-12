@@ -3,8 +3,8 @@
 > Plain-language working notes describing what has been built so far, phase by phase, and where
 > to change things. Useful for quickly getting up to speed before making changes.
 >
-> **Source of truth:** `MEMED_BUILD_SPEC.md` (repo root; a copy is kept in this `docs/` folder).
-> If anything here conflicts with the spec, the spec wins.
+> **Source of truth:** `docs/MEMED_BUILD_SPEC.md` (the only copy). If anything here conflicts with
+> the spec, the spec wins.
 
 ---
 
@@ -85,12 +85,11 @@ get wrong. Later layers *call* this brain; they never re-implement the math anyw
 
 ```
 Memed/
-├── MEMED_BUILD_SPEC.md      ← the rules (authoritative, also copied into docs/)
 ├── README.md                ← human-facing docs; includes the planned API table
 ├── .gitignore
-├── docs/                    ← this folder: phase notes + a copy of the spec
-│   ├── PHASE_NOTES.md       ← this file
-│   └── MEMED_BUILD_SPEC.md  ← copy of the root spec
+├── docs/                    ← project documentation
+│   ├── MEMED_BUILD_SPEC.md  ← the rules (authoritative, single source of truth)
+│   └── PHASE_NOTES.md       ← this file
 ├── backend/
 │   ├── src/
 │   │   ├── config/env.ts    ← reads & validates settings (Phase 0)
@@ -112,13 +111,12 @@ Memed/
 
 ## 5. Git branches
 
-| Branch | Head commit | Contains |
+| Branch | Contains | Status |
 |---|---|---|
-| `main` | `c54fdb7` | Phase 0 |
-| `backend-dev` | `ba2a33e` | Phase 0 + Phase 1 (5 commits on top) |
+| `main` | Phase 0 | Unchanged (merge target) |
+| `backend-dev` | Phase 0 + Phase 1 + docs | Pushed to `origin/backend-dev`; awaiting review |
 
-`backend-dev` is meant to be reviewed before merging into `main`. Nothing has been pushed to the
-remote.
+`backend-dev` is meant to be reviewed before merging into `main`.
 
 ---
 
@@ -198,6 +196,8 @@ globally unique).
 - **Instagram:** accepts `/p/<id>`, `/reel/<id>`, `/reels/<id>`, `/tv/<id>` (optionally with a
   username prefix). Drops query strings / hashtags / trailing slashes; lowercases the host.
   - `https://www.instagram.com/p/ABC123/?igsh=xyz` → `https://instagram.com/p/ABC123`
+  - The `/reels/<id>` alias **canonicalizes to `/reel/<id>`**, so the same reel always yields one
+    normalized URL (keeps D11's "one post can't be submitted twice" honest).
 - **YouTube:** accepts `watch?v=<id>`, `/shorts/<id>`, `youtu.be/<id>` — and all of them normalize
   to the *same* form `https://youtube.com/watch?v=<id>` (so one video can't be double-submitted).
 - Rejects wrong-platform links, non-http(s) URLs, malformed URLs and missing ids.
@@ -215,9 +215,10 @@ only ever *flagged* — it never blocks or reduces a payout.
   the budget.
 - `milestones.test.ts` — valid / unsorted / duplicate / non-increasing / too many / too few /
   budget-too-small.
-- `postUrl.test.ts` — Instagram and YouTube normalization plus all rejection cases.
+- `postUrl.test.ts` — Instagram and YouTube normalization plus all rejection cases, including the
+  `/reels/` → `/reel/` canonicalization.
 
-Result: **101 tests passing**, and **100% line/branch coverage** enforced on `payout.ts` and
+Result: **102 tests passing**, and **100% line/branch coverage** enforced on `payout.ts` and
 `milestones.ts` (the Phase 1 exit criteria). The coverage gate genuinely fails the build when
 coverage drops.
 
@@ -250,19 +251,19 @@ the *plan*, not live.
 | Which URLs are accepted / how links normalize | `backend/src/domain/postUrl.ts` → `validateAndNormalizePostUrl` |
 | Spike thresholds / rule | `backend/src/domain/spike.ts` (+ `SPIKE_*` in `env.ts` / `.env.example`) |
 | Settings (port, JWT, CORS, DB URL, Redis) | `backend/src/config/env.ts` + `backend/.env.example` |
-| The rules themselves (e.g. "make it cumulative") | `MEMED_BUILD_SPEC.md` Decision Log first, **then** the code + tests |
+| The rules themselves (e.g. "make it cumulative") | `docs/MEMED_BUILD_SPEC.md` Decision Log first, **then** the code + tests |
 
 ---
 
-## 10. Open questions / decisions to confirm
+## 10. Decisions made (resolved)
 
-- **Instagram `/reel/` vs `/reels/`:** the spec accepts both but (read literally) normalizes keeping
-  the path type, so `/reel/X` and `/reels/X` produce *different* normalized URLs for the same post.
-  This weakens D11's "one post can't be submitted twice". Implemented literally for now; decide
-  whether `reels` should be canonicalized to `reel`.
-- **Docs canonical location:** `docs/MEMED_BUILD_SPEC.md` is currently a copy; the repo-root
-  `MEMED_BUILD_SPEC.md` remains the canonical source of truth (README links to root). Decide whether
-  to consolidate into a single `docs/` copy.
+- **Instagram `/reel/` vs `/reels/`:** RESOLVED — `/reels/<id>` is canonicalized to `/reel/<id>`, so
+  one reel produces exactly one normalized URL (honours D11). Both spellings are still accepted; a
+  unit test asserts every variant collapses to `https://instagram.com/reel/XYZ`. The spec's Phase 1
+  Instagram task notes this.
+- **Docs canonical location:** RESOLVED — the build spec now lives in exactly one place,
+  `docs/MEMED_BUILD_SPEC.md`. The old repo-root copy was removed (`git rm`) and all references
+  (README, this file) were updated.
 
 ---
 
