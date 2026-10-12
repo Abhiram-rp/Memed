@@ -15,7 +15,7 @@
 | 0 | Repository & tooling setup | ✅ Done |
 | 1 | Domain core (pure logic) + unit tests | ✅ Done |
 | 2 | Database, models, app skeleton | ✅ Done |
-| 3 | Authentication & authorization | ⏳ Pending |
+| 3 | Authentication & authorization | ✅ Done |
 | 4 | Brand: campaigns | ⏳ Pending |
 | 5 | Creator: browse, submit, earnings | ⏳ Pending |
 | 6 | Views update & payout engine | ⏳ Pending |
@@ -69,9 +69,9 @@ routes → controllers → services → domain
 
 | Layer | Job | Contains I/O? | Built yet? |
 |---|---|---|---|
-| `routes/` | Map URLs to controllers | no | ❌ (Phase 2+) |
-| `controllers/` | Parse/validate the request, send the response | HTTP only | ❌ (Phase 2+) |
-| `services/` | Business logic, database access | DB | ❌ (Phase 3+) |
+| `routes/` | Map URLs to handlers | no | ✅ (Phase 2) |
+| `controllers/` | Handlers live inline in `routes/` — no separate layer | HTTP only | — |
+| `services/` | Business logic, database access | DB | ✅ (Phase 3) |
 | `domain/` | **Pure logic** — the "brain" | **no** | ✅ (Phase 1) |
 
 **"Pure logic"** means: no database, no network, no HTTP. Just functions in, values out — like a
@@ -101,12 +101,15 @@ Memed/
 │   │   │   ├── postUrl.ts
 │   │   │   └── spike.ts
 │   │   ├── errors/          ← AppError + subclasses (Phase 2)
-│   │   ├── middleware/      ← asyncHandler, validate, notFound, errorHandler (Phase 2)
+│   │   ├── middleware/      ← asyncHandler, validate, notFound, errorHandler (Phase 2); authenticate, requireRole (Phase 3)
 │   │   ├── models/          ← User, Campaign, Submission + toJSON transform (Phase 2)
-│   │   └── routes/          ← health + /api aggregator (Phase 2)
+│   │   ├── routes/          ← health + /api aggregator (Phase 2); auth (Phase 3)
+│   │   ├── schemas/         ← zod request schemas (Phase 3)
+│   │   ├── services/        ← authService: signup/login/signToken (Phase 3)
+│   │   └── types/           ← Express Request augmentation (Phase 3)
 │   ├── tests/
 │   │   ├── unit/            ← Phase 1 tests
-│   │   ├── integration/     ← health, models, errorHandling (Phase 2)
+│   │   ├── integration/     ← health, models, errorHandling (Phase 2); auth (Phase 3)
 │   │   ├── helpers/mongo.ts ← in-memory replica set helper (Phase 2)
 │   │   └── setup.ts
 │   ├── package.json  tsconfig.json  tsconfig.test.json  jest.config.ts
@@ -121,7 +124,7 @@ Memed/
 | Branch | Contains | Status |
 |---|---|---|
 | `main` | Phase 0 | Unchanged (merge target) |
-| `backend-dev` | Phase 0 + Phase 1 + Phase 2 + docs | Pushed to `origin/backend-dev`; awaiting review |
+| `backend-dev` | Phase 0 + Phase 1 + Phase 2 + Phase 3 + docs | Pushed to `origin/backend-dev`; awaiting review |
 
 `backend-dev` is meant to be reviewed before merging into `main`.
 
@@ -135,7 +138,7 @@ server yet.
 | File | What it is, simply |
 |---|---|
 | `.gitignore` | Tells git to ignore junk: `node_modules`, build output, `.env` secrets, logs. Keeps `.env.example`. |
-| `backend/package.json` | Lists the libraries used and the **commands** you run (see §9). |
+| `backend/package.json` | Lists the libraries used and the **commands** you run (see §10). |
 | `backend/tsconfig.json` | TypeScript rules. `strict: true` makes TS catch many bugs before runtime. `noUncheckedIndexedAccess` makes array access safer. |
 | `backend/tsconfig.test.json` | A TS config used only for tests (includes the `tests/` folder). |
 | `backend/jest.config.ts` | Test-runner config (Jest). Coverage rules were added here in Phase 1. |
@@ -258,7 +261,31 @@ Result: **122 tests passing** (102 unit + 20 integration), coverage gate still 1
 
 ---
 
-## 9. How to run / verify (from `backend/`)
+## 9. Phase 3 — Authentication & authorization
+
+Users can now sign up, log in, and identify themselves with a JWT. The role guard is in
+place for the brand/creator split that Phases 4–5 build on.
+
+| Piece | What it is |
+|---|---|
+| `schemas/auth.ts` | zod schemas: signup (name 1–80, email, password 8–72, role enum) and login. Email is trimmed + lowercased **before** the format check. |
+| `services/authService.ts` | `signup` (bcrypt cost 10; duplicate email → 409 via the unique index), `login` (identical "Invalid email or password" for unknown email and wrong password — no user enumeration), `signToken` (`{ sub, role }`, expiry from `JWT_EXPIRES_IN`). |
+| `middleware/authenticate.ts` | Parses `Bearer` token, verifies JWT, loads the user from the DB (deleted users lose access), attaches `req.user = { id, role }`. |
+| `middleware/requireRole.ts` | `requireRole('brand', ...)` → 403 on mismatch. |
+| `types/express.d.ts` | Augments Express `Request` with `user`. |
+| `routes/auth.ts` | `POST /api/auth/signup` (201), `POST /api/auth/login` (200), `GET /api/auth/me` (200). Signup/login rate-limited 20 req / 15 min / IP, disabled in tests. |
+
+**Tests (`tests/integration/auth.test.ts`, 18 cases):** signup success + hash never in any
+response, duplicate email 409, weak / 72+-char passwords, invalid email/role/name, login
+success/failure (identical 401 for unknown email), `/me` with/without/forged token, and the
+role guard (brand 200 / creator 403 / anonymous 401).
+
+Result: **140 tests passing** (102 unit + 38 integration), coverage gate still 100%,
+build + lint + prettier clean.
+
+---
+
+## 10. How to run / verify (from `backend/`)
 
 | Command | What it does |
 |---|---|
@@ -271,15 +298,17 @@ Result: **122 tests passing** (102 unit + 20 integration), coverage gate still 1
 | `npm run dev` | Starts the API (needs a MongoDB **replica set** reachable at `MONGODB_URI`). |
 | `npm start` | Runs the compiled `dist/server.js` (after `npm run build`). |
 
-`GET /health` is live (try `curl http://localhost:4000/health`). Everything else in the README's
-API table is still the *plan* — auth and the rest arrive in Phase 3+.
+`GET /health` is live (try `curl http://localhost:4000/health`). Auth is live too:
+`POST /api/auth/signup`, `POST /api/auth/login`, `GET /api/auth/me` (Bearer token).
+Everything else in the README's API table is still the *plan* — campaigns and submissions
+arrive in Phases 4–5.
 
 Integration tests boot an in-memory MongoDB replica set (`mongodb-memory-server`). The first run
 downloads the mongod binary (~330 MB) into `~/.cache/mongodb-binaries`; later runs are fast.
 
 ---
 
-## 10. Change cheat-sheet (decision → file)
+## 11. Change cheat-sheet (decision → file)
 
 | If someone asks to change… | Go to |
 |---|---|
@@ -293,7 +322,7 @@ downloads the mongod binary (~330 MB) into `~/.cache/mongodb-binaries`; later ru
 
 ---
 
-## 11. Decisions made (resolved)
+## 12. Decisions made (resolved)
 
 - **Instagram `/reel/` vs `/reels/`:** RESOLVED — `/reels/<id>` is canonicalized to `/reel/<id>`, so
   one reel produces exactly one normalized URL (honours D11). Both spellings are still accepted; a
@@ -305,11 +334,10 @@ downloads the mongod binary (~330 MB) into `~/.cache/mongodb-binaries`; later ru
 
 ---
 
-## 12. What's next
+## 13. What's next
 
 Still to build, in order (see the spec for detail):
 
-- **Phase 3:** signup / login / JWT auth.
 - **Phase 4:** brand campaign endpoints.
 - **Phase 5:** creator browse / submit / earnings.
 - **Phase 6:** the `PATCH /api/submissions/:id/views` endpoint running payout math in a DB
