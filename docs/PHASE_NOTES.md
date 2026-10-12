@@ -89,7 +89,11 @@ Memed/
 ├── .gitignore
 ├── docs/                    ← project documentation
 │   ├── MEMED_BUILD_SPEC.md  ← the rules (authoritative, single source of truth)
-│   └── PHASE_NOTES.md       ← this file
+│   ├── PHASE_NOTES.md       ← this file
+│   ├── phase0_doc.md        ← Phase 0 code explained (tooling & env config)
+│   ├── phase1_doc.md        ← Phase 1 code explained (domain core)
+│   ├── phase2_doc.md        ← Phase 2 code explained (db, models, app skeleton)
+│   └── phase3_doc.md        ← Phase 3 code explained (auth)
 ├── backend/
 │   ├── src/
 │   │   ├── app.ts           ← builds the Express app (no listen) (Phase 2)

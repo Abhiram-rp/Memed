@@ -56,7 +56,11 @@ memed/
 ├── README.md
 ├── docs/
 │   ├── MEMED_BUILD_SPEC.md     # authoritative build spec
-│   └── PHASE_NOTES.md          # phase-by-phase working notes
+│   ├── PHASE_NOTES.md          # phase-by-phase working notes
+│   ├── phase0_doc.md           # Phase 0 code explained (tooling & env config)
+│   ├── phase1_doc.md           # Phase 1 code explained (domain core)
+│   ├── phase2_doc.md           # Phase 2 code explained (db, models, app skeleton)
+│   └── phase3_doc.md           # Phase 3 code explained (auth)
 ├── docker-compose.yml          (Phase 10)
 ├── .gitignore
 ├── backend/
