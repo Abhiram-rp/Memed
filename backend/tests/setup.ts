@@ -9,4 +9,5 @@
 process.env.NODE_ENV = process.env.NODE_ENV ?? 'test';
 process.env.MONGODB_URI =
   process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/memed-test?replicaSet=rs0';
-process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-secret-that-is-at-least-32-characters-long';
+process.env.JWT_SECRET =
+  process.env.JWT_SECRET ?? 'test-secret-that-is-at-least-32-characters-long';
