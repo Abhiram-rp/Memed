@@ -16,7 +16,7 @@
 | 1 | Domain core (pure logic) + unit tests | ✅ Done |
 | 2 | Database, models, app skeleton | ✅ Done |
 | 3 | Authentication & authorization | ✅ Done |
-| 4 | Brand: campaigns | ⏳ Pending |
+| 4 | Brand: campaigns | ✅ Done |
 | 5 | Creator: browse, submit, earnings | ⏳ Pending |
 | 6 | Views update & payout engine | ⏳ Pending |
 | 7 | Frontend (Next.js) | ⏳ Pending |
@@ -70,7 +70,7 @@ routes → controllers → services → domain
 | Layer | Job | Contains I/O? | Built yet? |
 |---|---|---|---|
 | `routes/` | Map URLs to handlers | no | ✅ (Phase 2) |
-| `controllers/` | Handlers live inline in `routes/` — no separate layer | HTTP only | — |
+| `controllers/` | Thin HTTP handlers (auth handlers still live inline in `routes/`) | HTTP only | ✅ (Phase 4) |
 | `services/` | Business logic, database access | DB | ✅ (Phase 3) |
 | `domain/` | **Pure logic** — the "brain" | **no** | ✅ (Phase 1) |
 
@@ -93,7 +93,8 @@ Memed/
 │   ├── phase0_doc.md        ← Phase 0 code explained (tooling & env config)
 │   ├── phase1_doc.md        ← Phase 1 code explained (domain core)
 │   ├── phase2_doc.md        ← Phase 2 code explained (db, models, app skeleton)
-│   └── phase3_doc.md        ← Phase 3 code explained (auth)
+│   ├── phase3_doc.md        ← Phase 3 code explained (auth)
+│   └── phase4_doc.md        ← Phase 4 code explained (brand campaigns)
 ├── backend/
 │   ├── src/
 │   │   ├── app.ts           ← builds the Express app (no listen) (Phase 2)
@@ -107,13 +108,15 @@ Memed/
 │   │   ├── errors/          ← AppError + subclasses (Phase 2)
 │   │   ├── middleware/      ← asyncHandler, validate, notFound, errorHandler (Phase 2); authenticate, requireRole (Phase 3)
 │   │   ├── models/          ← User, Campaign, Submission + toJSON transform (Phase 2)
-│   │   ├── routes/          ← health + /api aggregator (Phase 2); auth (Phase 3)
+│   │   ├── routes/          ← health + /api aggregator (Phase 2); auth (Phase 3); campaigns (Phase 4)
+│   │   ├── controllers/     ← thin HTTP handlers (Phase 4)
 │   │   ├── schemas/         ← zod request schemas (Phase 3)
-│   │   ├── services/        ← authService: signup/login/signToken (Phase 3)
+│   │   ├── validators/      ← zod request schemas (Phase 4)
+│   │   ├── services/        ← authService (Phase 3); campaignService, campaignDto, submissionDto (Phase 4)
 │   │   └── types/           ← Express Request augmentation (Phase 3)
 │   ├── tests/
 │   │   ├── unit/            ← Phase 1 tests
-│   │   ├── integration/     ← health, models, errorHandling (Phase 2); auth (Phase 3)
+│   │   ├── integration/     ← health, models, errorHandling (Phase 2); auth (Phase 3); campaigns (Phase 4)
 │   │   ├── helpers/mongo.ts ← in-memory replica set helper (Phase 2)
 │   │   └── setup.ts
 │   ├── package.json  tsconfig.json  tsconfig.test.json  jest.config.ts
@@ -128,7 +131,7 @@ Memed/
 | Branch | Contains | Status |
 |---|---|---|
 | `main` | Phase 0 | Unchanged (merge target) |
-| `backend-dev` | Phase 0 + Phase 1 + Phase 2 + Phase 3 + docs | Pushed to `origin/backend-dev`; awaiting review |
+| `backend-dev` | Phase 0 + Phase 1 + Phase 2 + Phase 3 + Phase 4 + docs | Phase 4 commits are local (10 ahead of `origin/backend-dev`); earlier phases pushed |
 
 `backend-dev` is meant to be reviewed before merging into `main`.
 
@@ -142,7 +145,7 @@ server yet.
 | File | What it is, simply |
 |---|---|
 | `.gitignore` | Tells git to ignore junk: `node_modules`, build output, `.env` secrets, logs. Keeps `.env.example`. |
-| `backend/package.json` | Lists the libraries used and the **commands** you run (see §10). |
+| `backend/package.json` | Lists the libraries used and the **commands** you run (see §11). |
 | `backend/tsconfig.json` | TypeScript rules. `strict: true` makes TS catch many bugs before runtime. `noUncheckedIndexedAccess` makes array access safer. |
 | `backend/tsconfig.test.json` | A TS config used only for tests (includes the `tests/` folder). |
 | `backend/jest.config.ts` | Test-runner config (Jest). Coverage rules were added here in Phase 1. |
@@ -289,7 +292,34 @@ build + lint + prettier clean.
 
 ---
 
-## 10. How to run / verify (from `backend/`)
+## 10. Phase 4 — Brand: Campaigns
+
+A brand can now create campaigns and read them back with live budget figures. This is the first
+phase with a separate `controllers/` layer (thin handlers) and a `validators/` folder.
+
+| Piece | What it is |
+|---|---|
+| `validators/campaign.ts` | zod body schema for `POST /api/campaigns`: name, platform, budget (positive int), milestones (1–20 of `{views, payout}` positive ints). Cross-field ladder rules (D8/D9) run through `validateMilestones` and come back as per-field `details`. |
+| `validators/common.ts` | `objectIdParamSchema` — a malformed `:id` is a 400 before any DB call. |
+| `services/campaignDto.ts` | `toCampaignDTO()` — the shared campaign shape; derives `remaining = budget − spent`; never leaks `_id`/`__v`. |
+| `services/submissionDto.ts` | `toSubmissionDTO()` — the shared submission shape (spec §5.3) plus `creator { id, name }`; derives `capped = paidAmount < entitledAmount`. |
+| `services/campaignService.ts` | `create` (sort ladder, `spent: 0`, `status: 'live'`), `listMyCampaigns` (own campaigns newest first + one aggregation for `submissionCount` — no N+1), `getCampaignById` / `listCampaignSubmissions` (scoped by `_id` **and** `brand`, so another brand gets a plain 404). |
+| `controllers/campaignController.ts` | Thin handlers: guard `req.user`, delegate to the service, respond. No business logic. |
+| `routes/campaigns.ts` | `POST /`, `GET /mine`, `GET /:id`, `GET /:id/submissions` — all `authenticate` + `requireRole('brand')`. **Order matters:** `/mine` is registered before `/:id`. Mounted at `/api/campaigns`. |
+
+**Tests (`tests/integration/campaigns.test.ts`, 14 cases in four groups):** create (201, sorted
+milestones, `spent: 0`, `remaining = budget`, `status: 'live'`); validation (duplicate thresholds,
+non-increasing payouts, budget below the smallest payout, empty ladder, >20 milestones, float
+budget — each 400 with `details`); auth/roles (creator 403, no token 401, each brand sees only its
+own `/mine`); ownership (another brand's `/:id` and `/:id/submissions` → 404, malformed id → 400,
+owner sees an inserted submission with the right DTO shape).
+
+Result: **186 tests passing** (134 unit + 52 integration), coverage gate still 100%,
+build + lint clean.
+
+---
+
+## 11. How to run / verify (from `backend/`)
 
 | Command | What it does |
 |---|---|
@@ -303,22 +333,25 @@ build + lint + prettier clean.
 | `npm start` | Runs the compiled `dist/server.js` (after `npm run build`). |
 
 `GET /health` is live (try `curl http://localhost:4000/health`). Auth is live too:
-`POST /api/auth/signup`, `POST /api/auth/login`, `GET /api/auth/me` (Bearer token).
-Everything else in the README's API table is still the *plan* — campaigns and submissions
-arrive in Phases 4–5.
+`POST /api/auth/signup`, `POST /api/auth/login`, `GET /api/auth/me` (Bearer token). Brand
+campaigns are live: `POST /api/campaigns`, `GET /api/campaigns/mine`, `GET /api/campaigns/:id`,
+`GET /api/campaigns/:id/submissions` (all brand-only). Submissions and creator endpoints arrive
+in Phase 5.
 
 Integration tests boot an in-memory MongoDB replica set (`mongodb-memory-server`). The first run
 downloads the mongod binary (~330 MB) into `~/.cache/mongodb-binaries`; later runs are fast.
 
 ---
 
-## 11. Change cheat-sheet (decision → file)
+## 12. Change cheat-sheet (decision → file)
 
 | If someone asks to change… | Go to |
 |---|---|
 | Payout amounts, "highest rung" logic | `backend/src/domain/payout.ts` → `calculateEntitledPayout` |
 | Budget cap / partial-payout behaviour | `backend/src/domain/payout.ts` → `calculatePayoutDelta` |
 | Ladder rules (count, ordering, minimum budget) | `backend/src/domain/milestones.ts` → `validateMilestones` |
+| Campaign request validation (name, platform, budget) | `backend/src/validators/campaign.ts` → `createCampaignSchema` |
+| Campaign / submission API shapes | `backend/src/services/campaignDto.ts` / `submissionDto.ts` |
 | Which URLs are accepted / how links normalize | `backend/src/domain/postUrl.ts` → `validateAndNormalizePostUrl` |
 | Spike thresholds / rule | `backend/src/domain/spike.ts` (+ `SPIKE_*` in `env.ts` / `.env.example`) |
 | Settings (port, JWT, CORS, DB URL, Redis) | `backend/src/config/env.ts` + `backend/.env.example` |
@@ -326,7 +359,7 @@ downloads the mongod binary (~330 MB) into `~/.cache/mongodb-binaries`; later ru
 
 ---
 
-## 12. Decisions made (resolved)
+## 13. Decisions made (resolved)
 
 - **Instagram `/reel/` vs `/reels/`:** RESOLVED — `/reels/<id>` is canonicalized to `/reel/<id>`, so
   one reel produces exactly one normalized URL (honours D11). Both spellings are still accepted; a
@@ -338,11 +371,10 @@ downloads the mongod binary (~330 MB) into `~/.cache/mongodb-binaries`; later ru
 
 ---
 
-## 13. What's next
+## 14. What's next
 
 Still to build, in order (see the spec for detail):
 
-- **Phase 4:** brand campaign endpoints.
 - **Phase 5:** creator browse / submit / earnings.
 - **Phase 6:** the `PATCH /api/submissions/:id/views` endpoint running payout math in a DB
   transaction.

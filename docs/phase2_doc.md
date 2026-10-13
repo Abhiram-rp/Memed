@@ -312,8 +312,9 @@ export const apiRouter = Router();
 apiRouter.use('/auth', authRouter);   // added in Phase 3
 ```
 
-The aggregation point for every `/api` route. Phase 4+ will mount campaigns, submissions
-and creators routers here.
+The aggregation point for every `/api` route. Auth is mounted here (Phase 3); the campaigns
+router is mounted directly in `app.ts` (Phase 4). Submissions and creators routers arrive in
+Phase 5.
 
 ## Deep dive — `backend/src/app.ts`
 
