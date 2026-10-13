@@ -130,6 +130,7 @@ export async function listLive(page: number, limit: number): Promise<LiveCampaig
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
+      .select('name platform budget spent status milestones createdAt brand')
       .populate('brand', 'name')
       .lean(),
     Campaign.countDocuments({ status: 'live' }),

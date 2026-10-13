@@ -2,6 +2,7 @@ import { ConflictError, NotFoundError, ValidationError } from '../errors';
 import { Campaign } from '../models/Campaign';
 import { Submission, type SubmissionDocument } from '../models/Submission';
 import { validateAndNormalizePostUrl } from '../domain/postUrl';
+import type { SubmissionLike } from './submissionDto';
 import type { CreateSubmissionInput } from '../validators/submission';
 
 function isDuplicateKeyError(err: unknown): boolean {
@@ -50,10 +51,10 @@ export async function create(
   }
 }
 
-export async function listMySubmissions(creatorId: string): Promise<SubmissionDocument[]> {
+export async function listMySubmissions(creatorId: string): Promise<SubmissionLike[]> {
   const submissions = await Submission.find({ creator: creatorId })
     .sort({ createdAt: -1 })
     .populate('campaign', 'name platform')
     .lean();
-  return submissions as unknown as SubmissionDocument[];
+  return submissions as unknown as SubmissionLike[];
 }

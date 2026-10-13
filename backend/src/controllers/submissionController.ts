@@ -17,5 +17,5 @@ export async function listMySubmissions(req: Request, res: Response): Promise<vo
     throw new UnauthenticatedError('Authentication required');
   }
   const items = await listMySubmissionsRecord(req.user.id);
-  res.json({ items: items.map((item) => toSubmissionDTO(item as any)) });
+  res.json({ items: items.map((item) => toSubmissionDTO(item)) });
 }
