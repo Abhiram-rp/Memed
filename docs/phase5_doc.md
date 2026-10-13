@@ -21,7 +21,7 @@ A creator can now browse live campaigns, submit a post, and read their earnings:
 - `listLive()` — the paginated creator campaign list
 - `createSubmission()` / `listMySubmissions()` — the submit and "my submissions" services
 - `getCreatorEarnings()` — one `$group` aggregation with a `byCampaign` breakdown
-- 7 integration suites + 2 unit suites (50 new tests).
+- 5 integration suites + 2 unit suites.
 
 **Exit criteria met:** creator can browse, submit, and view earnings via API.
 
@@ -452,7 +452,7 @@ app.use('/api/creators', creatorsRouter);
 
 Setup mirrors the other suites: `setupTestDb()` + `Model.init()` (to build the unique indexes),
 `clearTestDb()` between tests, `teardownTestDb()` at the end. Phase 5 added two unit suites and
-seven integration suites, organised so the four "Group N" suites mirror the spec's task order.
+five integration suites, organised so the four "Group N" suites mirror the spec's task order.
 
 **Unit**
 
@@ -478,18 +478,15 @@ seven integration suites, organised so the four "Group N" suites mirror the spec
 - `tests/integration/earnings.test.ts` — **Group 4, earnings** (3): all zeros for a creator with
   no submissions; sums `paidAmount` across campaigns with the `byCampaign` breakdown; does not
   include another creator's earnings.
-- `tests/integration/campaigns-list.test.ts` (4) and `tests/integration/submissions-create.test.ts`
-  (8): earlier stand-alone suites for the same two behaviours (list pagination; create + 409/400/
-  404 + 403). They predate the four-group suites and still pass.
 - `tests/integration/campaigns-get-by-id.test.ts` (5): role matrix on `GET /:id` — creator on a
   live campaign → 200, creator on exhausted → 404, brand owner → 200, other brand → 404,
   malformed id → 400.
 
-> Note: `campaigns-list.test.ts` and `submissions-create.test.ts` **duplicate** the Group 1/Group 2
-> coverage. They were kept (both green) rather than deleted; consolidating them into the group
-> suites is an optional tidy-up.
+> Note: two earlier stand-alone suites for the same Group 1/Group 2 behaviours
+> (`campaigns-list.test.ts`, `submissions-create.test.ts`) were fully subsumed by the group suites
+> and removed in `77fd9c3`.
 
-Result: **236 tests passing** across 20 suites; build clean.
+Result: **224 tests passing** across 18 suites; build clean.
 
 ---
 
