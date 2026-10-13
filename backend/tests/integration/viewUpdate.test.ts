@@ -433,3 +433,123 @@ describe('Group 3 - Budget cap, shared budget and concurrency', () => {
     await assertInvariants(campaignId);
   });
 });
+
+/**
+ * Group 4 — the transaction logic must prevent overspending and double-paying
+ * under real concurrency. Each test fires parallel PATCHes and then checks the
+ * money invariants (§4.4) straight from the database.
+ */
+describe('Group 4 - Concurrency races never overspend or double-pay', () => {
+  jest.setTimeout(60000);
+
+  let brand: Account;
+  let creator: Account;
+
+  beforeAll(async () => {
+    await setupTestDb();
+    await User.init();
+    await Campaign.init();
+    await Submission.init();
+  });
+
+  afterAll(async () => {
+    await teardownTestDb();
+  });
+
+  beforeEach(async () => {
+    await clearTestDb();
+    brand = await signup('brand', 'brand@example.com');
+    creator = await signup('creator', 'creator@example.com');
+  });
+
+  it('overspend race: 20 parallel updates never pay more than the budget', async () => {
+    const campaignId = await createCampaign(brand.token, {
+      budget: 1200,
+      milestones: [
+        { views: 1000, payout: 500 },
+        { views: 5000, payout: 2000 },
+      ],
+    });
+
+    const submissionIds: string[] = [];
+    for (let index = 0; index < 20; index += 1) {
+      const postUrl = `https://instagram.com/p/OVER${String(index).padStart(3, '0')}`;
+      submissionIds.push(await submitPost(creator.token, campaignId, postUrl));
+    }
+
+    // Every submission is entitled to 2000 (5000 views); the budget is only 1200.
+    const responses = await Promise.all(submissionIds.map((id) => patchViews(id, 5000)));
+
+    for (const res of responses) {
+      expect(res.status).toBe(200);
+    }
+
+    const campaign = await Campaign.findById(campaignId).lean();
+    expect(campaign?.spent).toBe(1200);
+    expect(campaign?.status).toBe('exhausted');
+
+    const submissions = await Submission.find({ campaign: campaignId }).lean();
+    const totalPaid = submissions.reduce((sum, submission) => sum + submission.paidAmount, 0);
+    expect(totalPaid).toBe(1200);
+    for (const submission of submissions) {
+      expect(submission.paidAmount).toBeLessThanOrEqual(2000);
+    }
+
+    await assertInvariants(campaignId);
+  });
+
+  it('double-pay race: 10 identical parallel updates pay exactly once', async () => {
+    const campaignId = await createCampaign(brand.token, {
+      budget: 100000,
+      milestones: [{ views: 1000, payout: 500 }],
+    });
+    const submissionId = await submitPost(creator.token, campaignId, 'https://instagram.com/p/DOUBLE01');
+
+    const responses = await Promise.all(
+      Array.from({ length: 10 }, () => patchViews(submissionId, 1000)),
+    );
+
+    for (const res of responses) {
+      expect(res.status).toBe(200);
+    }
+    const deltas = responses.map((res) => res.body.payout.delta);
+    expect(deltas.filter((delta) => delta === 500)).toHaveLength(1);
+    expect(deltas.filter((delta) => delta === 0)).toHaveLength(9);
+
+    const submission = await Submission.findById(submissionId).lean();
+    expect(submission?.paidAmount).toBe(500);
+
+    const campaign = await Campaign.findById(campaignId).lean();
+    expect(campaign?.spent).toBe(500);
+
+    await assertInvariants(campaignId);
+  });
+
+  it('mixed race on one submission settles on the highest entitlement', async () => {
+    const campaignId = await createCampaign(brand.token, {
+      budget: 100000,
+      milestones: [
+        { views: 1000, payout: 500 },
+        { views: 5000, payout: 2000 },
+      ],
+    });
+    const submissionId = await submitPost(creator.token, campaignId, 'https://instagram.com/p/MIXED001');
+
+    const views = [1000, 5000, 1000, 5000, 1000];
+    const responses = await Promise.all(views.map((value) => patchViews(submissionId, value)));
+
+    for (const res of responses) {
+      expect(res.status).toBe(200);
+      expect(res.body.payout.delta).toBeGreaterThanOrEqual(0);
+    }
+
+    const submission = await Submission.findById(submissionId).lean();
+    expect(submission?.entitledAmount).toBe(2000);
+    expect(submission?.paidAmount).toBe(2000);
+
+    const campaign = await Campaign.findById(campaignId).lean();
+    expect(campaign?.spent).toBe(2000);
+
+    await assertInvariants(campaignId);
+  });
+});
