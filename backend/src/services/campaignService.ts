@@ -1,5 +1,8 @@
+import type { Types } from 'mongoose';
 import { normalizeMilestones } from '../domain/milestones';
 import { Campaign, type CampaignDocument } from '../models/Campaign';
+import { Submission } from '../models/Submission';
+import { toCampaignDTO, type CampaignDTO } from './campaignDto';
 import type { CreateCampaignInput } from '../validators/campaign';
 
 /**
@@ -21,4 +24,36 @@ export async function create(brandId: string, input: CreateCampaignInput): Promi
   await campaign.save();
   await campaign.populate('brand', 'name');
   return campaign;
+}
+
+interface SubmissionCountRow {
+  _id: Types.ObjectId;
+  count: number;
+}
+
+/**
+ * The brand's own campaigns, newest first, each with its submission count
+ * (spec Phase 4 task 3). Counts come from ONE aggregation grouped by campaign
+ * and are merged via a Map — no N+1 queries; campaigns without submissions
+ * get `submissionCount: 0`.
+ */
+export async function listMyCampaigns(brandId: string): Promise<CampaignDTO[]> {
+  const campaigns = await Campaign.find({ brand: brandId }).sort({ createdAt: -1 }).lean();
+
+  const ids = campaigns.map((campaign) => campaign._id);
+  const rows = await Submission.aggregate<SubmissionCountRow>([
+    { $match: { campaign: { $in: ids } } },
+    { $group: { _id: '$campaign', count: { $sum: 1 } } },
+  ]);
+
+  const countByCampaign = new Map<string, number>();
+  for (const row of rows) {
+    countByCampaign.set(row._id.toString(), row.count);
+  }
+
+  return campaigns.map((campaign) =>
+    toCampaignDTO(campaign, {
+      submissionCount: countByCampaign.get(campaign._id.toString()) ?? 0,
+    }),
+  );
 }

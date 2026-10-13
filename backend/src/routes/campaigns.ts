@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createCampaign } from '../controllers/campaignController';
+import { createCampaign, listMyCampaigns } from '../controllers/campaignController';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { authenticate } from '../middleware/authenticate';
 import { requireRole } from '../middleware/requireRole';
@@ -16,5 +16,9 @@ router.post(
   validate(createCampaignSchema, 'body'),
   asyncHandler(createCampaign),
 );
+
+// `/mine` MUST be registered before any `/:id` route so it is not swallowed
+// by the id param matcher.
+router.get('/mine', authenticate, requireRole('brand'), asyncHandler(listMyCampaigns));
 
 export { router as campaignsRouter };
