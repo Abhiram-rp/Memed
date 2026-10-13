@@ -164,3 +164,152 @@ describe('Group 1 - View update walks the milestone ladder (PATCH /api/submissio
     await assertInvariants(campaignId);
   });
 });
+
+/**
+ * Group 2 — idempotency (D6), monotonic payouts / no clawback (D5), input
+ * validation, the public endpoint (D13) and an already-exhausted campaign.
+ */
+describe('Group 2 - Idempotency, monotonic payouts and validation', () => {
+  jest.setTimeout(60000);
+
+  let brand: Account;
+  let creator: Account;
+
+  beforeAll(async () => {
+    await setupTestDb();
+    await User.init();
+    await Campaign.init();
+    await Submission.init();
+  });
+
+  afterAll(async () => {
+    await teardownTestDb();
+  });
+
+  beforeEach(async () => {
+    await clearTestDb();
+    brand = await signup('brand', 'brand@example.com');
+    creator = await signup('creator', 'creator@example.com');
+  });
+
+  it('repeating the same PATCH pays nothing the second time (D6)', async () => {
+    const campaignId = await createCampaign(brand.token);
+    const submissionId = await submitPost(creator.token, campaignId, 'https://instagram.com/p/REPEAT1');
+
+    const first = await patchViews(submissionId, 50000);
+    expect(first.status).toBe(200);
+    expect(first.body.payout.delta).toBe(2000);
+    expect(first.body.payout.paidAmount).toBe(2000);
+    expect(first.body.campaign.spent).toBe(2000);
+
+    const second = await patchViews(submissionId, 50000);
+    expect(second.status).toBe(200);
+    expect(second.body.payout.delta).toBe(0);
+    expect(second.body.payout.paidAmount).toBe(2000);
+    expect(second.body.campaign.spent).toBe(2000);
+
+    await assertInvariants(campaignId);
+  });
+
+  it('stores a decreased view count but never claws money back (D5)', async () => {
+    const campaignId = await createCampaign(brand.token);
+    const submissionId = await submitPost(creator.token, campaignId, 'https://instagram.com/p/DECREASE1');
+
+    await patchViews(submissionId, 50000); // paid 2000
+
+    const decreased = await patchViews(submissionId, 20000);
+    expect(decreased.status).toBe(200);
+    expect(decreased.body.submission.views).toBe(20000);
+    expect(decreased.body.submission.entitledAmount).toBe(2000);
+    expect(decreased.body.submission.paidAmount).toBe(2000);
+    expect(decreased.body.payout.delta).toBe(0);
+    expect(decreased.body.campaign.spent).toBe(2000);
+
+    // The decrease is persisted, not just echoed.
+    const stored = await Submission.findById(submissionId).lean();
+    expect(stored?.views).toBe(20000);
+    expect(stored?.entitledAmount).toBe(2000);
+    expect(stored?.paidAmount).toBe(2000);
+
+    // Climbing again pays only the difference to the top milestone.
+    const climbed = await patchViews(submissionId, 100000);
+    expect(climbed.status).toBe(200);
+    expect(climbed.body.payout.delta).toBe(3000);
+    expect(climbed.body.payout.paidAmount).toBe(5000);
+    expect(climbed.body.campaign.spent).toBe(5000);
+
+    await assertInvariants(campaignId);
+  });
+
+  it('returns 404 NOT_FOUND for an unknown but valid submission id', async () => {
+    const res = await patchViews('0123456789abcdef01234567', 10000);
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('NOT_FOUND');
+  });
+
+  it('returns 400 for a malformed submission id', async () => {
+    const res = await patchViews('not-an-id', 10000);
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('rejects invalid view bodies with 400', async () => {
+    const campaignId = await createCampaign(brand.token);
+    const submissionId = await submitPost(creator.token, campaignId, 'https://instagram.com/p/BADBODY1');
+
+    const invalidBodies: Array<{ label: string; body: Record<string, unknown> }> = [
+      { label: 'string "500"', body: { views: '500' } },
+      { label: 'float 1.5', body: { views: 1.5 } },
+      { label: 'negative -1', body: { views: -1 } },
+      { label: 'null', body: { views: null } },
+      { label: 'missing', body: {} },
+      { label: 'above max 2000000001', body: { views: 2000000001 } },
+    ];
+
+    for (const { label, body } of invalidBodies) {
+      const res = await request(app).patch(`/api/submissions/${submissionId}/views`).send(body);
+      expect({ label, status: res.status }).toEqual({ label, status: 400 });
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    }
+
+    // Nothing was written by any rejected request.
+    const stored = await Submission.findById(submissionId).lean();
+    expect(stored?.views).toBe(0);
+    expect(stored?.paidAmount).toBe(0);
+    await assertInvariants(campaignId);
+  });
+
+  it('requires no Authorization header (D13)', async () => {
+    const campaignId = await createCampaign(brand.token);
+    const submissionId = await submitPost(creator.token, campaignId, 'https://instagram.com/p/PUBLIC01');
+
+    // patchViews deliberately sends no Authorization header.
+    const res = await patchViews(submissionId, 10000);
+    expect(res.status).toBe(200);
+    expect(res.body.payout.paidAmount).toBe(500);
+    expect(res.body.campaign.spent).toBe(500);
+  });
+
+  it('still accepts an update on an already-exhausted campaign (delta 0, views stored)', async () => {
+    const campaignId = await createCampaign(brand.token, {
+      budget: 500,
+      milestones: [{ views: 10000, payout: 500 }],
+    });
+    const submissionId = await submitPost(creator.token, campaignId, 'https://instagram.com/p/EXHAUST1');
+
+    const exhaust = await patchViews(submissionId, 10000);
+    expect(exhaust.status).toBe(200);
+    expect(exhaust.body.campaign.spent).toBe(500);
+    expect(exhaust.body.campaign.status).toBe('exhausted');
+
+    const after = await patchViews(submissionId, 20000);
+    expect(after.status).toBe(200);
+    expect(after.body.submission.views).toBe(20000);
+    expect(after.body.payout.delta).toBe(0);
+    expect(after.body.payout.paidAmount).toBe(500);
+    expect(after.body.campaign.spent).toBe(500);
+    expect(after.body.campaign.status).toBe('exhausted');
+
+    await assertInvariants(campaignId);
+  });
+});
