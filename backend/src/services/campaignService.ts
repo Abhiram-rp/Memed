@@ -1,8 +1,10 @@
 import type { Types } from 'mongoose';
 import { normalizeMilestones } from '../domain/milestones';
+import { NotFoundError } from '../errors';
 import { Campaign, type CampaignDocument } from '../models/Campaign';
 import { Submission } from '../models/Submission';
 import { toCampaignDTO, type CampaignDTO } from './campaignDto';
+import { toSubmissionDTO, type SubmissionDTO } from './submissionDto';
 import type { CreateCampaignInput } from '../validators/campaign';
 
 /**
@@ -54,6 +56,49 @@ export async function listMyCampaigns(brandId: string): Promise<CampaignDTO[]> {
   return campaigns.map((campaign) =>
     toCampaignDTO(campaign, {
       submissionCount: countByCampaign.get(campaign._id.toString()) ?? 0,
+    }),
+  );
+}
+
+/**
+ * One campaign, but only for its owning brand (spec Phase 4 task 4). The query
+ * scopes by `brand`, so another brand's id yields the same 404 as an unknown
+ * id — ownership is never revealed.
+ */
+export async function getCampaignById(id: string, brandId: string): Promise<CampaignDTO> {
+  const campaign = await Campaign.findOne({ _id: id, brand: brandId }).lean();
+  if (!campaign) {
+    throw new NotFoundError('Campaign not found');
+  }
+  return toCampaignDTO(campaign);
+}
+
+/**
+ * Submissions for one of the brand's own campaigns, newest first (spec Phase 4
+ * task 4). Ownership is checked first; the submissions are then read in one
+ * query with the creator populated.
+ */
+export async function listCampaignSubmissions(
+  id: string,
+  brandId: string,
+): Promise<SubmissionDTO[]> {
+  const campaign = await Campaign.findOne({ _id: id, brand: brandId }).lean();
+  if (!campaign) {
+    throw new NotFoundError('Campaign not found');
+  }
+
+  const submissions = await Submission.find({ campaign: id })
+    .populate('creator', 'name')
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return submissions.map((submission) =>
+    toSubmissionDTO(submission, {
+      campaign: {
+        id: campaign._id.toString(),
+        name: campaign.name,
+        platform: campaign.platform,
+      },
     }),
   );
 }

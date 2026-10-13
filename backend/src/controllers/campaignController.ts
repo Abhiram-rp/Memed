@@ -3,6 +3,8 @@ import { UnauthenticatedError } from '../errors';
 import { toCampaignDTO } from '../services/campaignDto';
 import {
   create as createCampaignRecord,
+  getCampaignById as getCampaignByIdForBrand,
+  listCampaignSubmissions as listCampaignSubmissionsForBrand,
   listMyCampaigns as listMyCampaignsForBrand,
 } from '../services/campaignService';
 import type { CreateCampaignInput } from '../validators/campaign';
@@ -30,5 +32,30 @@ export async function listMyCampaigns(req: Request, res: Response): Promise<void
     throw new UnauthenticatedError('Authentication required');
   }
   const items = await listMyCampaignsForBrand(req.user.id);
+  res.json({ items });
+}
+
+/**
+ * GET /api/campaigns/:id — thin handler. The route chain validated `:id` and
+ * enforced the brand role; the service scopes the lookup by owner so another
+ * brand's campaign is a plain 404.
+ */
+export async function getCampaignById(req: Request, res: Response): Promise<void> {
+  if (!req.user) {
+    throw new UnauthenticatedError('Authentication required');
+  }
+  const campaign = await getCampaignByIdForBrand(req.params.id as string, req.user.id);
+  res.json({ campaign });
+}
+
+/**
+ * GET /api/campaigns/:id/submissions — thin handler. Same ownership rule as
+ * the single-campaign read; the service returns the submissions list.
+ */
+export async function listCampaignSubmissions(req: Request, res: Response): Promise<void> {
+  if (!req.user) {
+    throw new UnauthenticatedError('Authentication required');
+  }
+  const items = await listCampaignSubmissionsForBrand(req.params.id as string, req.user.id);
   res.json({ items });
 }
