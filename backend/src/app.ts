@@ -8,6 +8,7 @@ import { healthRouter } from './routes/health';
 import { apiRouter } from './routes';
 import { campaignsRouter } from './routes/campaigns';
 import { submissionsRouter } from './routes/submissions';
+import { creatorsRouter } from './routes/creators';
 
 /**
  * Build the Express app WITHOUT listening (spec Phase 2 task 5). Tests import
@@ -27,6 +28,7 @@ export function createApp(): Express {
   app.use('/api', apiRouter);
   app.use('/api/campaigns', campaignsRouter);
   app.use('/api/submissions', submissionsRouter);
+  app.use('/api/creators', creatorsRouter);
 
   app.use(notFound);
   app.use(errorHandler);
