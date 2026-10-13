@@ -112,6 +112,21 @@ export function toSubmissionDTO(doc: SubmissionLike, opts?: ToSubmissionDTOOptio
 
   if (opts?.campaign !== undefined) {
     dto.campaign = opts.campaign;
+  } else if (doc.campaign !== null && typeof doc.campaign === 'object') {
+    const c = doc.campaign as {
+      _id?: unknown;
+      id?: unknown;
+      name?: unknown;
+      platform?: unknown;
+    };
+    const cid = resolveId(c._id) ?? resolveId(c.id);
+    if (cid !== undefined && typeof c.name === 'string' && typeof c.platform === 'string') {
+      dto.campaign = {
+        id: cid,
+        name: c.name,
+        platform: c.platform as CampaignPlatform,
+      };
+    }
   }
   const creator = toCreatorDTO(doc.creator);
   if (creator !== undefined) {

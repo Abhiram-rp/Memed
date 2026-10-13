@@ -49,3 +49,11 @@ export async function create(
     throw err;
   }
 }
+
+export async function listMySubmissions(creatorId: string): Promise<SubmissionDocument[]> {
+  const submissions = await Submission.find({ creator: creatorId })
+    .sort({ createdAt: -1 })
+    .populate('campaign', 'name platform')
+    .lean();
+  return submissions as unknown as SubmissionDocument[];
+}
