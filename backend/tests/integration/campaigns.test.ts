@@ -170,3 +170,46 @@ describe('Group 2 - Validation', () => {
     );
   });
 });
+
+describe('Group 3 - Auth and roles', () => {
+  it('blocks a creator with 403 FORBIDDEN', async () => {
+    const creator = await signup('creator', 'creator@a.com');
+    const res = await createCampaign(creator.token, validCampaign);
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+  });
+
+  it('returns 401 without a token', async () => {
+    const res = await request(app).post('/api/campaigns').send(validCampaign);
+
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('UNAUTHENTICATED');
+  });
+
+  it('shows each brand only its own campaigns in /mine when two brands exist', async () => {
+    const brandA = await signup('brand', 'brand@h.com');
+    const brandB = await signup('brand', 'brand@i.com');
+
+    const a1 = await createCampaign(brandA.token, { ...validCampaign, name: 'Alpha One' });
+    const a2 = await createCampaign(brandA.token, { ...validCampaign, name: 'Alpha Two' });
+    await createCampaign(brandB.token, { ...validCampaign, name: 'Beta One' });
+
+    const resA = await request(app)
+      .get('/api/campaigns/mine')
+      .set('Authorization', `Bearer ${brandA.token}`);
+    expect(resA.status).toBe(200);
+    expect(resA.body.items).toHaveLength(2);
+    expect(resA.body.items.map((c: { id: string }) => c.id)).toEqual(
+      expect.arrayContaining([a1.body.campaign.id, a2.body.campaign.id]),
+    );
+    expect(resA.body.items.map((c: { name: string }) => c.name)).not.toContain('Beta One');
+
+    const resB = await request(app)
+      .get('/api/campaigns/mine')
+      .set('Authorization', `Bearer ${brandB.token}`);
+    expect(resB.status).toBe(200);
+    expect(resB.body.items).toHaveLength(1);
+    expect(resB.body.items[0].name).toBe('Beta One');
+  });
+});
