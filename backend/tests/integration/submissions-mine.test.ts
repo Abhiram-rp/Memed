@@ -17,12 +17,15 @@ async function signup(role: 'brand' | 'creator', email: string): Promise<{ token
   return { token: res.body.token, id: res.body.user.id };
 }
 
-describe('GET /api/submissions/mine', () => {
+/**
+ * Group 3 — My submissions (spec Phase 5 task 5). Two creators submitting to the
+ * same campaign each see only their own posts, with the campaign name and
+ * platform populated on every item.
+ */
+describe('Group 3 - My submissions (GET /api/submissions/mine)', () => {
   let brandId: string;
   let creator1Token: string;
-  let creator1Id: string;
   let creator2Token: string;
-  let creator2Id: string;
   let campaignId: string;
 
   beforeAll(async () => {
@@ -42,10 +45,8 @@ describe('GET /api/submissions/mine', () => {
     brandId = b.id;
     const c1 = await signup('creator', 'creator1@example.com');
     creator1Token = c1.token;
-    creator1Id = c1.id;
     const c2 = await signup('creator', 'creator2@example.com');
     creator2Token = c2.token;
-    creator2Id = c2.id;
 
     const camp = await Campaign.create({
       brand: brandId,
@@ -59,34 +60,45 @@ describe('GET /api/submissions/mine', () => {
     campaignId = camp.id;
   });
 
-  it('each creator sees only their own submissions with campaign name/platform', async () => {
-    await request(app)
+  it('shows each creator only their own submissions, with campaign name and platform', async () => {
+    const one = await request(app)
       .post('/api/submissions')
       .set('Authorization', `Bearer ${creator1Token}`)
-      .send({
-        campaignId,
-        postUrl: 'https://instagram.com/p/ABC123',
-      });
-    await request(app)
+      .send({ campaignId, postUrl: 'https://instagram.com/p/ABC123' });
+    const two = await request(app)
       .post('/api/submissions')
       .set('Authorization', `Bearer ${creator2Token}`)
-      .send({
-        campaignId,
-        postUrl: 'https://instagram.com/p/DEF456',
-      });
+      .send({ campaignId, postUrl: 'https://instagram.com/p/DEF456' });
+    expect(one.status).toBe(201);
+    expect(two.status).toBe(201);
 
     const res1 = await request(app)
       .get('/api/submissions/mine')
       .set('Authorization', `Bearer ${creator1Token}`);
     expect(res1.status).toBe(200);
     expect(res1.body.items).toHaveLength(1);
-    expect(res1.body.items[0].campaign).toHaveProperty('name', 'Test Campaign');
-    expect(res1.body.items[0].campaign).toHaveProperty('platform', 'instagram');
+    expect(res1.body.items[0]).toMatchObject({
+      id: one.body.submission.id,
+      campaignId,
+      postUrl: 'https://instagram.com/p/ABC123',
+      campaign: { id: campaignId, name: 'Test Campaign', platform: 'instagram' },
+    });
+    expect(res1.body.items[0]).not.toHaveProperty('_id');
+    expect(res1.body.items[0]).not.toHaveProperty('__v');
 
     const res2 = await request(app)
       .get('/api/submissions/mine')
       .set('Authorization', `Bearer ${creator2Token}`);
     expect(res2.status).toBe(200);
     expect(res2.body.items).toHaveLength(1);
+    expect(res2.body.items[0]).toMatchObject({
+      id: two.body.submission.id,
+      campaignId,
+      postUrl: 'https://instagram.com/p/DEF456',
+      campaign: { id: campaignId, name: 'Test Campaign', platform: 'instagram' },
+    });
+    // Neither creator sees the other's post.
+    expect(res1.body.items[0].postUrl).not.toBe('https://instagram.com/p/DEF456');
+    expect(res2.body.items[0].postUrl).not.toBe('https://instagram.com/p/ABC123');
   });
 });
