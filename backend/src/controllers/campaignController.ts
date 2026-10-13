@@ -3,11 +3,14 @@ import { UnauthenticatedError } from '../errors';
 import { toCampaignDTO } from '../services/campaignDto';
 import {
   create as createCampaignRecord,
-  getCampaignById as getCampaignByIdForBrand,
+  getCampaignByIdForBrand,
+  getCampaignByIdForCreator,
   listCampaignSubmissions as listCampaignSubmissionsForBrand,
+  listLive as listLiveCampaigns,
   listMyCampaigns as listMyCampaignsForBrand,
 } from '../services/campaignService';
 import type { CreateCampaignInput } from '../validators/campaign';
+import type { PaginationQuery } from '../validators/common';
 
 /**
  * POST /api/campaigns — thin handler (spec §9): the route chain already ran
@@ -37,14 +40,19 @@ export async function listMyCampaigns(req: Request, res: Response): Promise<void
 
 /**
  * GET /api/campaigns/:id — thin handler. The route chain validated `:id` and
- * enforced the brand role; the service scopes the lookup by owner so another
- * brand's campaign is a plain 404.
+ * allows both brand and creator roles.
  */
 export async function getCampaignById(req: Request, res: Response): Promise<void> {
   if (!req.user) {
     throw new UnauthenticatedError('Authentication required');
   }
-  const campaign = await getCampaignByIdForBrand(req.params.id as string, req.user.id);
+  const id = req.params.id as string;
+  if (req.user.role === 'brand') {
+    const campaign = await getCampaignByIdForBrand(id, req.user.id);
+    res.json({ campaign });
+    return;
+  }
+  const campaign = await getCampaignByIdForCreator(id);
   res.json({ campaign });
 }
 
@@ -58,4 +66,17 @@ export async function listCampaignSubmissions(req: Request, res: Response): Prom
   }
   const items = await listCampaignSubmissionsForBrand(req.params.id as string, req.user.id);
   res.json({ items });
+}
+
+/**
+ * GET /api/campaigns — list live campaigns for creators (spec Phase 5 task 1).
+ * Route chain: authenticate -> requireRole('creator') -> validate(query).
+ */
+export async function listLiveCampaignsHandler(req: Request, res: Response): Promise<void> {
+  if (!req.user) {
+    throw new UnauthenticatedError('Authentication required');
+  }
+  const { page, limit } = req.query as unknown as PaginationQuery;
+  const result = await listLiveCampaigns(page, limit);
+  res.json(result);
 }

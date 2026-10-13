@@ -65,8 +65,16 @@ export async function listMyCampaigns(brandId: string): Promise<CampaignDTO[]> {
  * scopes by `brand`, so another brand's id yields the same 404 as an unknown
  * id — ownership is never revealed.
  */
-export async function getCampaignById(id: string, brandId: string): Promise<CampaignDTO> {
+export async function getCampaignByIdForBrand(id: string, brandId: string): Promise<CampaignDTO> {
   const campaign = await Campaign.findOne({ _id: id, brand: brandId }).lean();
+  if (!campaign) {
+    throw new NotFoundError('Campaign not found');
+  }
+  return toCampaignDTO(campaign);
+}
+
+export async function getCampaignByIdForCreator(id: string): Promise<CampaignDTO> {
+  const campaign = await Campaign.findOne({ _id: id, status: 'live' }).populate('brand', 'name').lean();
   if (!campaign) {
     throw new NotFoundError('Campaign not found');
   }
@@ -101,4 +109,36 @@ export async function listCampaignSubmissions(
       },
     }),
   );
+}
+
+export interface LiveCampaignsResult {
+  items: CampaignDTO[];
+  page: number;
+  limit: number;
+  total: number;
+}
+
+/**
+ * List live campaigns for creators (spec Phase 5 task 1). Returns paginated
+ * results with brand name populated and remaining budget computed via DTO.
+ */
+export async function listLive(page: number, limit: number): Promise<LiveCampaignsResult> {
+  const skip = (page - 1) * limit;
+
+  const [items, total] = await Promise.all([
+    Campaign.find({ status: 'live' })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('brand', 'name')
+      .lean(),
+    Campaign.countDocuments({ status: 'live' }),
+  ]);
+
+  return {
+    items: items.map((campaign) => toCampaignDTO(campaign)),
+    page,
+    limit,
+    total,
+  };
 }
