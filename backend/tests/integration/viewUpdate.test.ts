@@ -313,3 +313,123 @@ describe('Group 2 - Idempotency, monotonic payouts and validation', () => {
     await assertInvariants(campaignId);
   });
 });
+
+/**
+ * Group 3 — the budget cap (D4), a single budget shared across submissions, and
+ * concurrency: parallel updates must never overpay and identical parallel
+ * updates must pay exactly once (D6).
+ */
+describe('Group 3 - Budget cap, shared budget and concurrency', () => {
+  jest.setTimeout(60000);
+
+  let brand: Account;
+  let creator: Account;
+
+  beforeAll(async () => {
+    await setupTestDb();
+    await User.init();
+    await Campaign.init();
+    await Submission.init();
+  });
+
+  afterAll(async () => {
+    await teardownTestDb();
+  });
+
+  beforeEach(async () => {
+    await clearTestDb();
+    brand = await signup('brand', 'brand@example.com');
+    creator = await signup('creator', 'creator@example.com');
+  });
+
+  it('caps a payout at the remaining budget and marks it capped (D4)', async () => {
+    const campaignId = await createCampaign(brand.token, { budget: 1000 });
+    const submissionId = await submitPost(creator.token, campaignId, 'https://instagram.com/p/CAP001');
+
+    // Entitled 2000 at 50K views, but only 1000 of budget remains.
+    const res = await patchViews(submissionId, 50000);
+    expect(res.status).toBe(200);
+    expect(res.body.payout.entitledAmount).toBe(2000);
+    expect(res.body.payout.delta).toBe(1000);
+    expect(res.body.payout.paidAmount).toBe(1000);
+    expect(res.body.payout.capped).toBe(true);
+    expect(res.body.submission.capped).toBe(true);
+    expect(res.body.campaign.spent).toBe(1000);
+    expect(res.body.campaign.remaining).toBe(0);
+    expect(res.body.campaign.status).toBe('exhausted');
+
+    await assertInvariants(campaignId);
+  });
+
+  it('drains one shared budget across several submissions', async () => {
+    const campaignId = await createCampaign(brand.token, { budget: 2500 });
+    const first = await submitPost(creator.token, campaignId, 'https://instagram.com/p/DRAIN001');
+    const second = await submitPost(creator.token, campaignId, 'https://instagram.com/p/DRAIN002');
+    const third = await submitPost(creator.token, campaignId, 'https://instagram.com/p/DRAIN003');
+
+    const firstRes = await patchViews(first, 10000); // 500
+    expect(firstRes.body.payout.delta).toBe(500);
+    expect(firstRes.body.campaign.spent).toBe(500);
+
+    // 2000 owed, exactly 2000 left: paid in full and NOT capped.
+    const secondRes = await patchViews(second, 50000);
+    expect(secondRes.body.payout.delta).toBe(2000);
+    expect(secondRes.body.payout.capped).toBe(false);
+    expect(secondRes.body.campaign.spent).toBe(2500);
+    expect(secondRes.body.campaign.status).toBe('exhausted');
+
+    // Entitled 5000, but the budget is empty: nothing more is paid.
+    const thirdRes = await patchViews(third, 100000);
+    expect(thirdRes.status).toBe(200);
+    expect(thirdRes.body.payout.delta).toBe(0);
+    expect(thirdRes.body.payout.paidAmount).toBe(0);
+    expect(thirdRes.body.payout.capped).toBe(true);
+    expect(thirdRes.body.campaign.spent).toBe(2500);
+
+    await assertInvariants(campaignId);
+  });
+
+  it('never overpays under 20 parallel updates on a tight budget', async () => {
+    const campaignId = await createCampaign(brand.token, { budget: 2500 });
+
+    const submissionIds: string[] = [];
+    for (let index = 0; index < 20; index += 1) {
+      const postUrl = `https://instagram.com/p/RACE${String(index).padStart(3, '0')}`;
+      submissionIds.push(await submitPost(creator.token, campaignId, postUrl));
+    }
+
+    // Every submission is entitled to 2000 (50K views); the budget is only 2500.
+    const responses = await Promise.all(submissionIds.map((id) => patchViews(id, 50000)));
+
+    for (const res of responses) {
+      expect(res.status).toBe(200);
+    }
+    const totalDelta = responses.reduce((sum, res) => sum + res.body.payout.delta, 0);
+    expect(totalDelta).toBe(2500);
+
+    const campaign = await Campaign.findById(campaignId).lean();
+    expect(campaign?.spent).toBe(2500);
+    expect(campaign?.status).toBe('exhausted');
+    await assertInvariants(campaignId);
+  });
+
+  it('pays exactly once for 10 identical parallel updates (D6)', async () => {
+    const campaignId = await createCampaign(brand.token);
+    const submissionId = await submitPost(creator.token, campaignId, 'https://instagram.com/p/ONCE001');
+
+    const responses = await Promise.all(
+      Array.from({ length: 10 }, () => patchViews(submissionId, 50000)),
+    );
+
+    for (const res of responses) {
+      expect(res.status).toBe(200);
+    }
+    const deltas = responses.map((res) => res.body.payout.delta);
+    expect(deltas.filter((delta) => delta === 2000)).toHaveLength(1);
+    expect(deltas.reduce((sum, delta) => sum + delta, 0)).toBe(2000);
+
+    const campaign = await Campaign.findById(campaignId).lean();
+    expect(campaign?.spent).toBe(2000);
+    await assertInvariants(campaignId);
+  });
+});
