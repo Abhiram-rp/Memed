@@ -61,6 +61,11 @@ h3 {
   margin: 0 0 8px;
 }
 
+h4 {
+  font-size: 14px;
+  margin: 12px 0 6px;
+}
+
 p {
   margin: 0 0 10px;
 }
@@ -239,6 +244,11 @@ th {
   font-weight: 600;
 }
 
+/* Demo "simulate views" control inside a submissions table cell. */
+.simulate-views input {
+  max-width: 110px;
+}
+
 /* ---------- Cards ---------- */
 
 .card {
@@ -357,6 +367,49 @@ th {
   color: var(--green-text);
   font-size: 14px;
   margin: 6px 0;
+}
+
+/* ---------- App shell ---------- */
+
+.app-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.app-header-inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.app-brand {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* ---------- Milestone ladder / earnings breakdown ---------- */
+
+.milestone-ladder,
+.breakdown {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
+}
+
+.milestone-ladder li,
+.breakdown li {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.milestone-ladder li:last-child,
+.breakdown li:last-child {
+  border-bottom: none;
 }
 
 /* ---------- Mobile ---------- */

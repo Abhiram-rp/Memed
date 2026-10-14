@@ -100,7 +100,7 @@ export default function SignupPage() {
   }
 
   return (
-    <main>
+    <main className="container">
       <h1>Sign up</h1>
 
       <form className="card" onSubmit={handleSubmit} noValidate>

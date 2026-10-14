@@ -22,5 +22,9 @@ export default function Home() {
     router.replace(user.role === "brand" ? "/brand" : "/creator");
   }, [loading, user, router]);
 
-  return <Spinner />;
+  return (
+    <main className="container">
+      <Spinner />
+    </main>
+  );
 }
