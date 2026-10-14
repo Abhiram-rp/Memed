@@ -1,0 +1,4 @@
+# Normalize every text file to LF, both in the repository and in the working tree.
+# This keeps committed blobs and Prettier (endOfLine: lf) consistent across OSes and
+# stops Windows checkouts (core.autocrlf=true) from rewriting line endings to CRLF.
+* text=auto eol=lf
