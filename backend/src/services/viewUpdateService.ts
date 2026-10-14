@@ -85,11 +85,14 @@ export async function updateViews(submissionId: string, views: number): Promise<
       });
 
       // Bonus flag only (D15): it never changes or blocks a payout.
+      // Backfill: a document created before `lastViewsUpdatedAt` existed has no
+      // value, so fall back to `createdAt` to always pass a valid Date.
+      const previousUpdatedAt = submission.lastViewsUpdatedAt ?? submission.createdAt;
       const spike = detectSpike(
         {
           previousViews: submission.views,
           newViews: views,
-          previousUpdatedAt: submission.lastViewsUpdatedAt,
+          previousUpdatedAt,
           now,
         },
         { minDelta: env.SPIKE_MIN_DELTA, ratePerMin: env.SPIKE_RATE_PER_MIN },
