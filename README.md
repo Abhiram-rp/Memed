@@ -51,9 +51,9 @@ live demo URLs are still placeholders — see [Live demo](#live-demo).
 
 | Service | URL |
 |---|---|
-| Frontend | TODO: add URL after deployment |
-| Backend | TODO: add URL after deployment |
-| Health endpoint | TODO: add URL after deployment |
+| Frontend | https://memed-liart.vercel.app |
+| Backend | https://memed-api-nch1.onrender.com |
+| Health endpoint | https://memed-api-nch1.onrender.com/health |
 
 > The backend is hosted on a free tier, so the first request after a period of idle can take
 > roughly **30–60 seconds** while it wakes up. Subsequent requests are fast.
