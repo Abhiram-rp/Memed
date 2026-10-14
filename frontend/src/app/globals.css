@@ -1,0 +1,1653 @@
+/* ============================================================================
+   Meme'd — design system
+   Dark-first. One strong accent (electric lime) used sparingly for primary
+   actions, progress and key numbers. Every colour, radius, spacing and shadow
+   is a CSS variable in :root so the theme changes in one place.
+   Light mode is opt-in via prefers-color-scheme and keeps WCAG AA contrast.
+
+   Sections
+   1. Tokens ............  :root (dark) + light-mode overrides
+   2. Base ..............  reset, typography, links, focus, selection
+   3. Layout helpers ....  container, row, stack, two-col
+   4. Buttons
+   5. Forms
+   6. Cards
+   7. Badges & pills
+   8. Progress
+   9. Tables
+   10. Messages
+   11. Skeleton & spinner
+   12. Header chrome
+   13. Utilities (a11y, ladder, breakdown)
+   14. Motion & reduced motion
+   15. Responsive
+   16. App shell
+   17. Page header
+   18. Auth pages
+   19. Brand dashboard
+   20. Creator dashboard
+   21. Loading, empty states & motion
+   22. Accessibility & mobile pass
+   ========================================================================= */
+
+/* ============================== 1. TOKENS ================================ */
+
+:root {
+  color-scheme: dark;
+
+  /* --- Accent (electric lime) --- */
+  --accent: #c8ff3e;
+  --accent-hover: #d7ff6b;
+  --accent-press: #b6ef2a;
+  --accent-ink: #0a0b0f; /* text placed on an accent fill */
+  --accent-text: #c8ff3e; /* accent used as text on the page background */
+  --accent-soft: rgba(200, 255, 62, 0.12);
+  --accent-border: rgba(200, 255, 62, 0.32);
+
+  /* --- Surfaces & text --- */
+  --bg: #0a0b0f;
+  --bg-elev: #10121a;
+  --surface: #14161f;
+  --surface-2: #1b1e2a;
+  --border: #262a38;
+  --border-strong: #343a4d;
+  --text: #f4f6fb;
+  --muted: #9aa3b4;
+  --faint: #7a8395;
+
+  /* --- Status: neutral / warn / danger / ok --- */
+  --neutral-text: #9aa3b4;
+  --neutral-bg: rgba(255, 255, 255, 0.06);
+  --warn-text: #ffc65c;
+  --warn-bg: rgba(255, 176, 32, 0.14);
+  --warn-solid: #ffb020;
+  --danger-text: #ff8a83;
+  --danger-bg: rgba(255, 95, 86, 0.14);
+  --danger-solid: #ff5f56;
+  --ok-text: #c8ff3e;
+  --ok-bg: rgba(200, 255, 62, 0.12);
+
+  /* --- Radii --- */
+  --radius-sm: 8px;
+  --radius-control: 10px;
+  --radius: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  /* --- Spacing scale --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* --- Shadows (subtle; borders do most of the work) --- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.45);
+  --glow-accent: 0 0 0 1px var(--accent-border), 0 8px 30px rgba(200, 255, 62, 0.16);
+
+  /* --- Motion --- */
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* --- Layout --- */
+  --maxw: 1100px;
+
+  /* --- Focus --- */
+  --ring: var(--accent);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+
+    --accent: #c8ff3e;
+    --accent-hover: #bdf52f;
+    --accent-press: #a8e019;
+    --accent-ink: #0e1320;
+    --accent-text: #556f00;
+    --accent-soft: rgba(140, 185, 10, 0.16);
+    --accent-border: rgba(110, 150, 0, 0.4);
+
+    --bg: #f5f6f9;
+    --bg-elev: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f1f3f8;
+    --border: #e2e6ee;
+    --border-strong: #cfd5e1;
+    --text: #0e1320;
+    --muted: #4f5a6b;
+    --faint: #6b7688;
+
+    --neutral-text: #4f5a6b;
+    --neutral-bg: #eef1f6;
+    --warn-text: #8a5a00;
+    --warn-bg: #fff1d6;
+    --warn-solid: #b26a00;
+    --danger-text: #b3261e;
+    --danger-bg: #fde8e6;
+    --danger-solid: #d1372c;
+    --ok-text: #4c6a00;
+    --ok-bg: #eef7d8;
+
+    --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+    --shadow-md: 0 8px 24px rgba(16, 24, 40, 0.08);
+    --shadow-lg: 0 20px 48px rgba(16, 24, 40, 0.12);
+    --glow-accent: 0 0 0 1px var(--accent-border), 0 8px 30px rgba(140, 185, 10, 0.16);
+  }
+}
+
+/* =============================== 2. BASE ================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text);
+  background: var(--bg);
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display, var(--font-sans), ui-sans-serif, system-ui, sans-serif);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+h1 {
+  font-size: clamp(1.7rem, 1.2rem + 2.2vw, 2.4rem);
+  margin: 0 0 var(--space-2);
+}
+
+h2 {
+  font-size: clamp(1.25rem, 1.05rem + 1vw, 1.55rem);
+  margin: 0 0 var(--space-2);
+}
+
+h3 {
+  font-size: 1.15rem;
+  margin: 0 0 var(--space-2);
+}
+
+h4 {
+  font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: var(--space-4) 0 var(--space-2);
+}
+
+p {
+  margin: 0 0 var(--space-3);
+}
+
+p:last-child {
+  margin-bottom: 0;
+}
+
+a {
+  color: var(--accent-text);
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* Visible keyboard focus everywhere. Mouse focus stays quiet. */
+:where(a, button, [role="button"], summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Large display numerals for money and headline stats. */
+.display {
+  font-family: var(--font-display, var(--font-sans), ui-sans-serif, system-ui, sans-serif);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================== 3. LAYOUT HELPERS =========================== */
+
+.container {
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding: var(--space-4);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.row-between {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.inline-field {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-end;
+}
+
+/* Two columns on desktop, one on mobile. */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+@media (min-width: 720px) {
+  .two-col {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* =============================== 4. BUTTONS ============================== */
+
+button,
+.btn {
+  font: inherit;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: var(--accent);
+  color: var(--accent-ink);
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+
+button:hover:not(:disabled),
+.btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+button:active:not(:disabled),
+.btn:active:not(:disabled) {
+  background: var(--accent-press);
+  transform: translateY(1px);
+}
+
+button:disabled,
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.secondary,
+.btn.secondary {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+button.secondary:hover:not(:disabled),
+.btn.secondary:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+
+button.secondary:active:not(:disabled),
+.btn.secondary:active:not(:disabled) {
+  background: var(--surface-2);
+}
+
+/* Loading state: a subtle pulse while a label like "Creating…" is shown. */
+button.is-loading:not(:disabled) {
+  cursor: progress;
+}
+
+button.link,
+.btn.link {
+  background: none;
+  border: none;
+  color: var(--accent-text);
+  padding: 2px 4px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+button.link:hover:not(:disabled),
+.btn.link:hover:not(:disabled) {
+  background: none;
+}
+
+/* ================================ 5. FORMS =============================== */
+
+input,
+select,
+textarea {
+  font: inherit;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  color: var(--text);
+  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--faint);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+
+input[type="radio"],
+input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.radio {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 400;
+  margin-bottom: var(--space-2);
+}
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  margin: 0 0 var(--space-4);
+  background: var(--surface-2);
+}
+
+legend {
+  font-weight: 700;
+  font-size: 13px;
+  padding: 0 var(--space-2);
+  color: var(--text);
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 13px;
+  margin: var(--space-1) 0 0;
+}
+
+.field {
+  margin-bottom: var(--space-4);
+}
+
+/* ================================ 6. CARDS =============================== */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* =========================== 7. BADGES & PILLS =========================== */
+
+.badge,
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  background: var(--neutral-bg);
+  color: var(--neutral-text);
+}
+
+.badge-green {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+}
+
+.badge-yellow {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+
+.badge-red {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.badge-gray {
+  background: var(--neutral-bg);
+  color: var(--neutral-text);
+}
+
+.badge-accent {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  border-color: var(--accent-border);
+}
+
+/* ============================== 8. PROGRESS ============================== */
+
+.progress {
+  width: 100%;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+.progress-fill.is-warn {
+  background: var(--warn-solid);
+}
+
+.progress-fill.is-danger {
+  background: var(--danger-solid);
+}
+
+/* =============================== 9. TABLES =============================== */
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th,
+td {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  background: var(--surface-2);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  position: sticky;
+  top: 0;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr {
+  transition: background var(--dur-fast) var(--ease);
+}
+
+tbody tr:hover {
+  background: var(--surface-2);
+}
+
+/* Demo "simulate views" control inside a submissions table cell. */
+.simulate-views input {
+  max-width: 120px;
+}
+
+/* Submit-post form inside a creator campaign card. */
+.submit-post-form {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+/* ============================== 10. MESSAGES ============================= */
+
+.error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--danger-text);
+  font-size: 14px;
+  margin: var(--space-2) 0;
+}
+
+.error p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.error ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.error li {
+  margin-bottom: 2px;
+}
+
+.success {
+  color: var(--ok-text);
+  font-size: 14px;
+  font-weight: 600;
+  margin: var(--space-2) 0;
+}
+
+/* ========================= 11. SKELETON & SPINNER ======================== */
+
+.skeleton {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 25%,
+    var(--border) 37%,
+    var(--surface-2) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.spinner-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5) 0;
+  color: var(--muted);
+}
+
+.spinner {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================ 12. HEADER CHROME ========================== */
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+}
+
+.app-header-inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
+}
+
+.app-brand {
+  font-family: var(--font-display, var(--font-sans), ui-sans-serif, system-ui, sans-serif);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+/* ============================== 13. UTILITIES ============================ */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Milestone ladder / earnings breakdown as a clean divider list. */
+.milestone-ladder,
+.breakdown {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
+}
+
+.milestone-ladder li,
+.breakdown li {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.milestone-ladder li:last-child,
+.breakdown li:last-child {
+  border-bottom: none;
+}
+
+/* ========================= 14. MOTION PREFERENCES ======================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* =============================== 15. MOBILE ============================== */
+
+@media (min-width: 640px) {
+  .container {
+    padding: var(--space-5);
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    font-size: 14px;
+  }
+
+  .container {
+    padding: var(--space-3);
+  }
+
+  .card {
+    padding: var(--space-4);
+  }
+}
+
+/* ============================ 16. APP SHELL ============================== */
+
+.app-main {
+  padding-top: var(--space-5);
+  padding-bottom: var(--space-7);
+}
+
+.app-user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.app-user-name {
+  font-weight: 600;
+  font-size: 14px;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================== 17. PAGE HEADER ============================= */
+
+.page-header {
+  margin-bottom: var(--space-5);
+}
+
+.page-title {
+  margin: 0 0 var(--space-1);
+}
+
+.page-subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+/* ============================ 18. AUTH PAGES ============================= */
+
+.auth-page {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6) var(--space-4);
+  background:
+    radial-gradient(70% 55% at 50% -10%, var(--accent-soft), transparent 70%),
+    var(--bg);
+  overflow: hidden;
+}
+
+/* Subtle grid pattern, faded out with a radial mask. */
+.auth-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 46px 46px;
+  opacity: 0.5;
+  -webkit-mask-image: radial-gradient(65% 55% at 50% 35%, #000 0%, transparent 78%);
+  mask-image: radial-gradient(65% 55% at 50% 35%, #000 0%, transparent 78%);
+  pointer-events: none;
+}
+
+.auth-panel {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+}
+
+.auth-head {
+  text-align: center;
+  margin-bottom: var(--space-5);
+}
+
+.auth-wordmark {
+  display: inline-block;
+  font-family: var(--font-display, var(--font-sans), ui-sans-serif, system-ui, sans-serif);
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+.auth-tagline {
+  margin: var(--space-2) 0 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.auth-card {
+  padding: var(--space-6);
+  margin-bottom: var(--space-4);
+  box-shadow: var(--shadow-md);
+}
+
+.auth-title {
+  font-size: 1.35rem;
+  margin: 0 0 var(--space-4);
+}
+
+.auth-submit {
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.auth-switch {
+  text-align: center;
+  font-size: 14px;
+}
+
+/* Role choice as two large selectable cards. */
+.role-fieldset {
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0 0 var(--space-4);
+}
+
+.role-fieldset legend {
+  padding: 0;
+  margin-bottom: var(--space-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+@media (min-width: 520px) {
+  .role-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.role-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-weight: 400;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+
+.role-card:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+
+.role-card:focus-within {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.role-card.is-selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: var(--glow-accent);
+}
+
+.role-card-title {
+  font-family: var(--font-display, var(--font-sans), ui-sans-serif, system-ui, sans-serif);
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.role-card-desc {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* ========================= 19. BRAND DASHBOARD =========================== */
+
+/* --- Progress bar label + exhausted state --- */
+.progress-wrap {
+  margin-top: var(--space-4);
+}
+
+.progress-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  font-size: 13px;
+}
+
+.progress-fill.is-exhausted {
+  background-color: var(--danger-solid);
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.18) 0 6px,
+    transparent 6px 12px
+  );
+}
+
+/* --- Campaign card --- */
+.campaign-head {
+  align-items: flex-start;
+}
+
+.campaign-meta {
+  margin: var(--space-1) 0 0;
+  font-size: 13px;
+}
+
+.budget-block {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: var(--space-4) 0 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.budget-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.budget-stat--total {
+  grid-column: 1 / -1;
+}
+
+.budget-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+
+.budget-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.budget-stat .budget-value.display {
+  font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.1rem);
+}
+
+.budget-stat--total .budget-value {
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+@media (min-width: 560px) {
+  .budget-block {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .budget-stat--total {
+    grid-column: auto;
+  }
+}
+
+.campaign-ladder {
+  margin-top: var(--space-5);
+}
+
+.campaign-actions {
+  margin-top: var(--space-4);
+}
+
+.submissions {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+/* --- Milestone ladder stepper --- */
+.ladder {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ladder-step {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+}
+
+.ladder-step:last-child {
+  padding-bottom: 0;
+}
+
+.ladder-step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 26px;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+
+.ladder-node {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ladder-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding-top: 1px;
+}
+
+.ladder-views {
+  font-weight: 600;
+}
+
+.ladder-arrow {
+  color: var(--faint);
+}
+
+.ladder-payout {
+  font-family: var(--font-display, var(--font-sans), ui-sans-serif, system-ui, sans-serif);
+  font-weight: 700;
+  color: var(--accent-text);
+}
+
+/* --- Create-campaign form --- */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.form-grid .field {
+  margin-bottom: 0;
+}
+
+@media (min-width: 640px) {
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .form-grid-full {
+    grid-column: 1 / -1;
+  }
+}
+
+.milestones-fieldset {
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0 0 var(--space-4);
+}
+
+.milestones-fieldset legend {
+  padding: 0;
+  margin-bottom: var(--space-2);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.milestone-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.milestone-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.milestone-row--head {
+  padding: 0 var(--space-1);
+}
+
+.milestone-head {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.milestone-cell {
+  min-width: 0;
+}
+
+.milestone-cell .error {
+  margin: var(--space-1) 0 0;
+}
+
+@media (max-width: 560px) {
+  .milestone-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .milestone-row--head {
+    display: none;
+  }
+
+  .milestone-remove {
+    grid-column: 1 / -1;
+  }
+}
+
+/* --- Live ladder preview --- */
+.ladder-preview {
+  margin: var(--space-4) 0;
+  padding: var(--space-4);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.ladder-preview h4 {
+  margin-top: 0;
+}
+
+.ladder-preview-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.ladder-preview-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.ladder-preview-views {
+  font-weight: 600;
+}
+
+.ladder-preview-arrow {
+  color: var(--faint);
+}
+
+.ladder-preview-payout {
+  font-family: var(--font-display, var(--font-sans), ui-sans-serif, system-ui, sans-serif);
+  font-weight: 700;
+  color: var(--accent-text);
+}
+
+/* ========================= 20. CREATOR DASHBOARD ========================= */
+
+/* Small uppercase label used above headline numbers. */
+.eyebrow {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+}
+
+/* --- Earnings hero --- */
+.earnings-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 150% at 100% 0%, var(--accent-soft), transparent 55%),
+    var(--surface);
+}
+
+.earnings-total {
+  margin: 0;
+  font-size: clamp(2.4rem, 1.6rem + 4vw, 3.6rem);
+  color: var(--text);
+}
+
+.earnings-sub {
+  margin: var(--space-2) 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.earnings-breakdown {
+  margin-top: var(--space-4);
+}
+
+.earnings-breakdown li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+}
+
+.breakdown-name {
+  font-weight: 600;
+}
+
+.breakdown-meta {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.breakdown-amount {
+  margin-left: auto;
+  font-family: var(--font-display, var(--font-sans), ui-sans-serif, system-ui, sans-serif);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-text);
+}
+
+/* --- Creator campaign card --- */
+.campaign-remaining {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.campaign-remaining-value {
+  font-size: clamp(1.4rem, 1.1rem + 1.4vw, 1.9rem);
+  color: var(--accent-text);
+}
+
+.campaign-ladder h4 {
+  margin-top: 0;
+}
+
+/* --- Submit-post form --- */
+.submit-post-label {
+  margin-bottom: var(--space-2);
+}
+
+.submit-post-form .inline-field input {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+/* --- Demo-only "simulate platform data" strip --- */
+.demo-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: 6px 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.demo-strip-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--warn-solid);
+  box-shadow: 0 0 0 3px var(--warn-bg);
+}
+
+/* --- Auto-dismissing payout result chip --- */
+.result-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  animation: chip-in var(--dur) var(--ease);
+}
+
+.result-chip--ok {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+  border-color: var(--accent-border);
+}
+
+.result-chip--muted {
+  background: var(--neutral-bg);
+  color: var(--neutral-text);
+}
+
+.result-chip--warn {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  border-color: var(--warn-solid);
+}
+
+@keyframes chip-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Submissions: table on desktop, stacked cards on mobile --- */
+.submissions-table .post-link {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 720px) {
+  .submissions-table-wrap {
+    border: none;
+    border-radius: 0;
+    background: none;
+    overflow: visible;
+  }
+
+  .submissions-table thead {
+    display: none;
+  }
+
+  .submissions-table,
+  .submissions-table tbody,
+  .submissions-table tr,
+  .submissions-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .submissions-table tr {
+    margin-bottom: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  .submissions-table tr:hover {
+    background: var(--surface);
+  }
+
+  .submissions-table td {
+    padding: var(--space-2) 0;
+    border-bottom: none;
+    white-space: normal;
+  }
+
+  .submissions-table td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 2px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+  }
+
+  .submissions-table .simulate-views input {
+    max-width: none;
+  }
+}
+
+/* ================= 21. LOADING, EMPTY STATES & MOTION ==================== */
+
+/* --- Skeleton composition helpers --- */
+.skeleton-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.skeleton-card {
+  pointer-events: none;
+  animation: none;
+}
+
+.skeleton-card .skeleton-bar {
+  margin-top: var(--space-4);
+}
+
+.skeleton-ladder {
+  margin-top: var(--space-5);
+}
+
+.skeleton-breakdown {
+  margin-top: var(--space-4);
+}
+
+/* --- Empty states --- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  text-align: center;
+}
+
+.empty-state-mark {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  margin-bottom: var(--space-1);
+  border: 1px solid var(--accent-border);
+  border-radius: 50%;
+  background: var(--accent-soft);
+}
+
+.empty-state-mark::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 10px;
+  height: 10px;
+  margin: auto;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.empty-state-title {
+  margin: 0;
+  font-family: var(--font-display, var(--font-sans), ui-sans-serif, system-ui, sans-serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.empty-state-desc {
+  margin: 0;
+  max-width: 44ch;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.empty-state-action {
+  margin-top: var(--space-2);
+}
+
+/* --- Auth gate: centre the spinner while the session resolves --- */
+.gate {
+  display: grid;
+  place-items: center;
+  min-height: 60dvh;
+}
+
+/* --- Motion: subtle entrance for content that mounts as data arrives --- */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card,
+.empty-state {
+  animation: rise-in var(--dur) var(--ease) both;
+}
+
+/* The lazily-expanded submissions panel fades in when it is revealed. */
+.submissions {
+  animation: rise-in var(--dur) var(--ease) both;
+}
+
+/* ================== 22. ACCESSIBILITY & MOBILE PASS ===================== */
+
+/* --- Skip link: off-screen until focused, then pinned top-left --- */
+.skip-link {
+  position: absolute;
+  left: var(--space-4);
+  top: -120px;
+  z-index: 100;
+  padding: 10px 16px;
+  border-radius: var(--radius-control);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+  box-shadow: var(--shadow-md);
+  transition: top var(--dur-fast) var(--ease);
+}
+
+.skip-link:focus {
+  top: var(--space-4);
+}
+
+/* Keep the skip-link target clear of the sticky header. */
+#main-content {
+  scroll-margin-top: 84px;
+}
+
+/* --- Long strings must never force a horizontal scroll --- */
+.result-chip,
+.demo-strip {
+  max-width: 100%;
+}
+
+.result-chip {
+  flex-wrap: wrap;
+}
+
+/* --- Mobile: comfortable tap targets and a tidier header --- */
+@media (max-width: 640px) {
+  button,
+  .btn,
+  select,
+  input:not([type="radio"]):not([type="checkbox"]) {
+    min-height: 44px;
+  }
+
+  .app-user-name {
+    max-width: 120px;
+  }
+}
+
+@media (max-width: 420px) {
+  .app-user-name {
+    max-width: 84px;
+  }
+}
