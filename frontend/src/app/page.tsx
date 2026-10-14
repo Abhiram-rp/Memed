@@ -1,10 +1,26 @@
+"use client";
+
+/** Entry point: sends each visitor to the right place based on auth state. */
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Spinner from "@/components/Spinner";
+import { useAuth } from "@/context/AuthContext";
+
 export default function Home() {
-  return (
-    <main>
-      <h1>Meme&apos;d</h1>
-      <p className="muted">
-        Frontend scaffold is in place. Navigation and dashboards are added in the next steps.
-      </p>
-    </main>
-  );
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+    if (user === null) {
+      router.replace("/login");
+      return;
+    }
+    router.replace(user.role === "brand" ? "/brand" : "/creator");
+  }, [loading, user, router]);
+
+  return <Spinner />;
 }

@@ -167,6 +167,39 @@ label {
   font-size: 14px;
 }
 
+input[type="radio"],
+input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+  margin-bottom: 6px;
+}
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin: 0 0 12px;
+}
+
+legend {
+  font-weight: 600;
+  font-size: 14px;
+  padding: 0 4px;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+
 .field {
   margin-bottom: 12px;
 }
@@ -271,12 +304,53 @@ th {
   border-radius: 999px;
 }
 
+/* ---------- Spinner ---------- */
+
+.spinner-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 0;
+  color: var(--muted);
+}
+
+.spinner {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2s;
+  }
+}
+
 /* ---------- Messages ---------- */
 
 .error {
   color: var(--red-text);
   font-size: 14px;
   margin: 6px 0;
+}
+
+.error ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.error li {
+  margin-bottom: 2px;
 }
 
 .success {
