@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * Live-campaign browser for creators (spec Phase 7): paginated cards with a
- * clearly marked slot for the submit-post form (built next). It re-fetches the
- * page currently shown whenever `refreshToken` changes, and steps back to a
- * valid page if the current one becomes empty after a refresh.
+ * Live-campaign browser for creators (spec Phase 7): paginated cards, each with
+ * a submit-post form. It re-fetches the page currently shown whenever
+ * `refreshToken` changes, and steps back to a valid page if the current one
+ * becomes empty after a refresh (for example when a campaign is exhausted).
  */
 
 import { useEffect, useState } from "react";
@@ -13,6 +13,7 @@ import MilestoneLadder from "@/components/MilestoneLadder";
 import Money from "@/components/Money";
 import Spinner from "@/components/Spinner";
 import StatusBadge from "@/components/StatusBadge";
+import SubmitPostForm from "@/components/SubmitPostForm";
 import { api } from "@/lib/api";
 import type { CampaignListResponse } from "@/types/api";
 
@@ -103,7 +104,7 @@ export default function CreatorCampaignList({
 
             <MilestoneLadder milestones={campaign.milestones} />
 
-            {/* Slot: submit-post form for this campaign (built next). */}
+            <SubmitPostForm campaign={campaign} onSubmitted={onRefresh} />
           </article>
         ))}
 

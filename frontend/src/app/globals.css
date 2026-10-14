@@ -249,6 +249,13 @@ th {
   max-width: 110px;
 }
 
+/* Submit-post form inside a creator campaign card. */
+.submit-post-form {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
 /* ---------- Cards ---------- */
 
 .card {

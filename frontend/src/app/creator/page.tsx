@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * Creator dashboard (spec Phase 7): the earnings summary and the live-campaign
- * browser. A single `refreshAll()` re-fetches everything the page shows
- * (earnings, the campaign page currently shown, and later the submissions) so
- * child components can trigger a refresh.
+ * Creator dashboard (spec Phase 7): the earnings summary, the live-campaign
+ * browser and the creator's own submissions. A single `refreshAll()` re-fetches
+ * everything the page shows (earnings, the campaign page currently shown, and
+ * the submissions) so child components can trigger a refresh.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -12,6 +12,7 @@ import AppShell from "@/components/AppShell";
 import CreatorCampaignList from "@/components/CreatorCampaignList";
 import ErrorMessage from "@/components/ErrorMessage";
 import Money from "@/components/Money";
+import MySubmissions from "@/components/MySubmissions";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Spinner from "@/components/Spinner";
 import { api } from "@/lib/api";
@@ -91,11 +92,7 @@ function CreatorDashboard() {
 
       <CreatorCampaignList refreshToken={refreshToken} onRefresh={refreshAll} />
 
-      {/* Slot: "My submissions" table (built next). */}
-      <section>
-        <h2>My submissions</h2>
-        <p className="muted">Your submissions will appear here.</p>
-      </section>
+      <MySubmissions refreshToken={refreshToken} onRefresh={refreshAll} />
     </>
   );
 }
