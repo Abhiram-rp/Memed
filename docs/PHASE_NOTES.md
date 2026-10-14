@@ -17,14 +17,22 @@
 | 2 | Database, models, app skeleton | ✅ Done |
 | 3 | Authentication & authorization | ✅ Done |
 | 4 | Brand: campaigns | ✅ Done |
-| 5 | Creator: browse, submit, earnings | ⏳ Pending |
-| 6 | Views update & payout engine | ⏳ Pending |
-| 7 | Frontend (Next.js) | ⏳ Pending |
-| 8 | Bonus: Redis campaign-list cache | ⏳ Pending |
-| 9 | Bonus: spike detection | ⏳ Pending |
-| 10 | Dockerisation | ⏳ Pending |
-| 11 | Deployment (free tiers) | ⏳ Pending |
-| 12 | Documentation & final QA | ⏳ Pending |
+| 5 | Creator: browse, submit, earnings | ✅ Done |
+| 6 | Views update & payout engine | ✅ Done |
+| 7 | Frontend (Next.js) | ✅ Done |
+| 8 | Bonus: Redis campaign-list cache | ❌ Not implemented |
+| 9 | Bonus: spike detection | ✅ Done |
+| 10 | Dockerisation | ❌ Not implemented |
+| 11 | Deployment (free tiers) | ✅ Done |
+| 12 | Documentation & final QA | 🚧 In progress |
+
+> **Phase 11 (deployment) is complete.** The live URLs are recorded in the README under
+> "Live demo". The backend runs on a free tier, so the first request after a period of idle can
+> take roughly 30–60 seconds.
+>
+> **Not implemented:** Phase 8 (Redis campaign-list cache) and Phase 10 (Dockerisation) were not
+> built. `backend/src/services/cacheService.ts` is a deliberate no-op stub, and there are no
+> Dockerfiles or `docker-compose.yml` in the repository.
 
 ---
 
