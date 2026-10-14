@@ -20,6 +20,7 @@ submit posts, track views, and watch their earnings update as a post climbs the 
 - [Local setup — frontend](#local-setup--frontend)
 - [Running the tests](#running-the-tests)
 - [What the tests cover](#what-the-tests-cover)
+- [Production smoke test](#production-smoke-test)
 - [API reference](#api-reference)
 - [Assumptions and design decisions](#assumptions-and-design-decisions)
 - [Known limitations](#known-limitations)
@@ -297,6 +298,38 @@ need no external database. The first run downloads a `mongod` binary; later runs
 - **Campaign rules** — creation, validation, ownership scoping, and role restrictions.
 - **Concurrency and idempotency** — parallel view updates never overspend the budget or double-pay,
   and repeating an update pays nothing extra.
+
+---
+
+## Production smoke test
+
+`scripts/smoke-test.mjs` is a dependency-free end-to-end check that exercises a **running** backend
+over HTTP. It uses only the Node 20+ built-in `fetch`, so it needs no packages and no database of its
+own — point it at any environment (local or deployed) and it walks the full brand + creator flow:
+
+1. `GET /health` returns 200 (retried a few times so a cold free-tier instance can wake up).
+2. Sign up a brand and a creator.
+3. The brand creates an Instagram campaign (budget 10000, ladder 1000→100 and 5000→400).
+4. The creator lists live campaigns and finds it.
+5. The creator submits a post (201, zero amounts); the same URL again returns 409.
+6. `PATCH` views: 1000 pays 100, repeating pays 0, 5000 pays 300 more, then a decrease pays 0.
+7. Creator earnings show `totalEarnings` 400.
+8. The brand's campaign list shows `spent` 400 and `remaining` 9600.
+9. A creator token calling `POST /api/campaigns` returns 403.
+
+It prints one `PASS`/`FAIL` line per step and exits `0` when every step passes, or `1` on the first
+failure. Tokens are never printed.
+
+```bash
+# Against a local backend (default base URL is http://localhost:4000):
+node scripts/smoke-test.mjs
+
+# Against a deployed backend:
+BASE_URL=https://your-backend.example node scripts/smoke-test.mjs
+```
+
+Each request has a 90-second timeout, and the health check is retried up to 3 times (20 seconds
+apart), so a sleeping free-tier instance has time to wake up before the run fails.
 
 ---
 
