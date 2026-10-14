@@ -43,7 +43,7 @@ file uploads, an admin role, i18n, and comprehensive frontend automated tests (t
 verified manually).
 
 **Not built:** the Redis campaign-list cache (Phase 8, a bonus) and Dockerisation (Phase 10). The
-live demo URLs are still placeholders — see [Live demo](#live-demo).
+live demo URLs are here — see [Live demo](#live-demo).
 
 ---
 
@@ -762,26 +762,38 @@ flagged        = increase >= minDelta AND ratePerMin >= ratePerMinThreshold
 
 ## How would this scale to 10,000 creators?
 
-The API is stateless — all state lives in MongoDB and the JWT — so it scales horizontally behind a
-load balancer with no sticky sessions; adding instances is the first lever.
-
-The first bottleneck is **hot-document contention**: every view update writes the same
-`campaign.spent` field inside a transaction, so one viral campaign serialises writes. At high write
-rates, split a campaign's budget into allocation buckets, or reserve budget in chunks per worker, so
-workers contend on different documents and the transaction stays short.
-
-Second, move view ingestion **off the request path**: platform webhooks or polling feed a queue
-(SQS or BullMQ), and workers apply updates in batches with idempotency keys, absorbing bursts and
-retrying safely.
-
-Third, add an append-only **payout ledger** for audit and reconciliation, plus a periodic job that
-asserts the invariants — `campaign.spent` equals the sum of ledger entries — so drift is caught
-early.
-
-For reads, the existing indexes and pagination already help; add a Redis cache for the hot campaign
-list, read replicas for dashboards, and pre-aggregated earnings counters so dashboards never scan
-submissions.
-
-Finally, add per-user and per-IP rate limiting, structured logs and metrics with alerts on flagged
-spikes, and replace the public views endpoint with real platform APIs for view verification behind
-service-to-service auth.
+### Scaling the API
+ 
+The API keeps no state of its own. Everything lives in MongoDB and the login token (JWT), so you can run as many copies as you need behind a load balancer, with no sticky sessions. Adding more instances is the first thing to try.
+ 
+### The first bottleneck: one busy campaign
+ 
+Every time a view is counted, the app updates the same `campaign.spent` field inside a transaction. If one campaign goes viral, all those updates line up and wait for each other.
+ 
+**Fix:** split a campaign's budget into several smaller pieces (allocation buckets), or let each worker reserve a chunk of budget up front. Workers then update different records and don't block each other, and each transaction stays short.
+ 
+### Take view counting off the main request
+ 
+Instead of processing views as they arrive:
+ 
+1. Feed them into a queue (SQS or BullMQ) from platform webhooks or polling.
+2. Let background workers process them in batches.
+3. Give every update a unique ID (idempotency key), so a retry never counts the same view twice.
+The queue also absorbs sudden traffic spikes.
+ 
+### Keep a payout record
+ 
+- Add an append-only payout ledger (new entries only, never edits) for audits and reconciliation.
+- Run a regular job that checks `campaign.spent` equals the total of the ledger entries. If they ever differ, you find out early.
+### Faster reads
+ 
+Your existing indexes and pagination already help. On top of that:
+ 
+- Cache the popular campaign list in Redis.
+- Send dashboard queries to read replicas (read-only copies of the database).
+- Keep running earnings totals, so dashboards never scan all submissions.
+### Safety and monitoring
+ 
+- Rate-limit each user and each IP address.
+- Add structured logs, metrics, and alerts for suspicious spikes.
+- Replace the public views endpoint with the real platform APIs to verify views, and protect those calls with service-to-service authentication.
