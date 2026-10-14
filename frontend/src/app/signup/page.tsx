@@ -96,102 +96,153 @@ export default function SignupPage() {
   }
 
   if (loading) {
-    return <Spinner label="Checking your session…" />;
+    return (
+      <main id="main-content" className="auth-page">
+        <Spinner label="Checking your session…" />
+      </main>
+    );
   }
 
   return (
-    <main className="container">
-      <h1>Sign up</h1>
-
-      <form className="card" onSubmit={handleSubmit} noValidate>
-        <div className="field">
-          <label htmlFor="name">Name</label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            autoComplete="name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-          {fieldErrors.name !== undefined && <p className="error">{fieldErrors.name}</p>}
+    <main id="main-content" className="auth-page">
+      <div className="auth-panel">
+        <div className="auth-head">
+          <span className="auth-wordmark">Meme&apos;d</span>
+          <p className="auth-tagline">Turn views into payouts.</p>
         </div>
 
-        <div className="field">
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-          {fieldErrors.email !== undefined && <p className="error">{fieldErrors.email}</p>}
-        </div>
+        <form className="card auth-card" onSubmit={handleSubmit} noValidate>
+          <h1 className="auth-title">Create your account</h1>
 
-        <div className="field">
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-          <p className="hint">at least 8 characters</p>
-          {fieldErrors.password !== undefined && <p className="error">{fieldErrors.password}</p>}
-        </div>
-
-        <fieldset>
-          <legend>I am a…</legend>
-          <label className="radio">
+          <div className="field">
+            <label htmlFor="name">Name</label>
             <input
-              type="radio"
-              name="role"
-              value="brand"
-              checked={role === "brand"}
-              onChange={() => setRole("brand")}
+              id="name"
+              name="name"
+              type="text"
+              autoComplete="name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              aria-invalid={fieldErrors.name !== undefined}
+              aria-describedby={fieldErrors.name !== undefined ? "name-error" : undefined}
             />
-            Brand
-          </label>
-          <label className="radio">
-            <input
-              type="radio"
-              name="role"
-              value="creator"
-              checked={role === "creator"}
-              onChange={() => setRole("creator")}
-            />
-            Creator
-          </label>
-          {fieldErrors.role !== undefined && <p className="error">{fieldErrors.role}</p>}
-        </fieldset>
-
-        {formError !== null && (
-          <div className="error" role="alert">
-            <p>{formError}</p>
-            {details.length > 0 && (
-              <ul>
-                {details.map((detail) => (
-                  <li key={`${detail.path}:${detail.message}`}>
-                    {detail.path}: {detail.message}
-                  </li>
-                ))}
-              </ul>
+            {fieldErrors.name !== undefined && (
+              <p className="error" id="name-error">
+                {fieldErrors.name}
+              </p>
             )}
           </div>
-        )}
 
-        <button type="submit" disabled={submitting}>
-          {submitting ? "Creating account..." : "Sign up"}
-        </button>
-      </form>
+          <div className="field">
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              aria-invalid={fieldErrors.email !== undefined}
+              aria-describedby={fieldErrors.email !== undefined ? "email-error" : undefined}
+            />
+            {fieldErrors.email !== undefined && (
+              <p className="error" id="email-error">
+                {fieldErrors.email}
+              </p>
+            )}
+          </div>
 
-      <p className="muted">
-        Already have an account? <Link href="/login">Log in</Link>
-      </p>
+          <div className="field">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              aria-invalid={fieldErrors.password !== undefined}
+              aria-describedby={
+                fieldErrors.password !== undefined ? "password-hint password-error" : "password-hint"
+              }
+            />
+            <p className="hint" id="password-hint">
+              at least 8 characters
+            </p>
+            {fieldErrors.password !== undefined && (
+              <p className="error" id="password-error">
+                {fieldErrors.password}
+              </p>
+            )}
+          </div>
+
+          <fieldset
+            className="role-fieldset"
+            aria-describedby={fieldErrors.role !== undefined ? "role-error" : undefined}
+          >
+            <legend>I am a…</legend>
+            <div className="role-grid">
+              <label className={`role-card ${role === "brand" ? "is-selected" : ""}`}>
+                <input
+                  type="radio"
+                  name="role"
+                  value="brand"
+                  className="visually-hidden"
+                  checked={role === "brand"}
+                  onChange={() => setRole("brand")}
+                />
+                <span className="role-card-title">Brand</span>
+                <span className="role-card-desc">
+                  Run campaigns and pay creators for the views they earn.
+                </span>
+              </label>
+
+              <label className={`role-card ${role === "creator" ? "is-selected" : ""}`}>
+                <input
+                  type="radio"
+                  name="role"
+                  value="creator"
+                  className="visually-hidden"
+                  checked={role === "creator"}
+                  onChange={() => setRole("creator")}
+                />
+                <span className="role-card-title">Creator</span>
+                <span className="role-card-desc">
+                  Post content, grow views, get paid per milestone.
+                </span>
+              </label>
+            </div>
+            {fieldErrors.role !== undefined && (
+              <p className="error" id="role-error">
+                {fieldErrors.role}
+              </p>
+            )}
+          </fieldset>
+
+          {formError !== null && (
+            <div className="error" role="alert">
+              <p>{formError}</p>
+              {details.length > 0 && (
+                <ul>
+                  {details.map((detail) => (
+                    <li key={`${detail.path}:${detail.message}`}>
+                      {detail.path}: {detail.message}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          <button type="submit" className="auth-submit" disabled={submitting}>
+            {submitting ? "Creating account..." : "Sign up"}
+          </button>
+        </form>
+
+        <p className="auth-switch muted">
+          Already have an account? <Link href="/login">Log in</Link>
+        </p>
+      </div>
     </main>
   );
 }

@@ -10,11 +10,12 @@
 import { useCallback, useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import CreatorCampaignList from "@/components/CreatorCampaignList";
+import EarningsSkeleton from "@/components/EarningsSkeleton";
 import ErrorMessage from "@/components/ErrorMessage";
 import Money from "@/components/Money";
 import MySubmissions from "@/components/MySubmissions";
+import PageHeader from "@/components/PageHeader";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import Spinner from "@/components/Spinner";
 import { api } from "@/lib/api";
 import type { Earnings } from "@/types/api";
 
@@ -63,25 +64,45 @@ function CreatorDashboard() {
 
   return (
     <>
-      <h1>Creator dashboard</h1>
+      <PageHeader title="Creator dashboard" subtitle="Your hustle, tracked." />
 
-      <section className="card">
-        <h2>Earnings</h2>
+      <section className="card earnings-hero">
+        <h2 className="eyebrow">Total earnings</h2>
         {earningsError !== null && <ErrorMessage error={earningsError} />}
-        {earnings === null && earningsError === null && <Spinner label="Loading earnings…" />}
+        {earnings === null && earningsError === null && (
+          <>
+            <p className="visually-hidden" role="status">
+              Loading earnings…
+            </p>
+            <EarningsSkeleton />
+          </>
+        )}
         {earnings !== null && (
           <>
-            <p className="card-title">
+            <p className="earnings-total display">
               <Money value={earnings.totalEarnings} />
             </p>
-            <p className="muted">
+            <p className="earnings-sub">
               {earnings.submissionCount} submission{earnings.submissionCount === 1 ? "" : "s"}
+              {earnings.byCampaign.length > 0 &&
+                ` across ${earnings.byCampaign.length} campaign${
+                  earnings.byCampaign.length === 1 ? "" : "s"
+                }`}
             </p>
+            {earnings.submissionCount === 0 && (
+              <p className="hint">Submit a post to a live campaign to start earning.</p>
+            )}
             {earnings.byCampaign.length > 0 && (
-              <ul className="breakdown">
+              <ul className="breakdown earnings-breakdown">
                 {earnings.byCampaign.map((row) => (
                   <li key={row.campaignId}>
-                    {row.campaignName} — <Money value={row.paidAmount} />
+                    <span className="breakdown-name">{row.campaignName}</span>
+                    <span className="breakdown-meta">
+                      {row.submissionCount} post{row.submissionCount === 1 ? "" : "s"}
+                    </span>
+                    <span className="breakdown-amount">
+                      <Money value={row.paidAmount} />
+                    </span>
                   </li>
                 ))}
               </ul>

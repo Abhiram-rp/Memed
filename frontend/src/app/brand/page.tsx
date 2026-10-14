@@ -9,10 +9,12 @@
 import { useCallback, useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import BrandCampaignCard from "@/components/BrandCampaignCard";
+import CampaignCardSkeleton from "@/components/CampaignCardSkeleton";
 import CreateCampaignForm from "@/components/CreateCampaignForm";
+import EmptyState from "@/components/EmptyState";
 import ErrorMessage from "@/components/ErrorMessage";
+import PageHeader from "@/components/PageHeader";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import Spinner from "@/components/Spinner";
 import { api } from "@/lib/api";
 import type { Campaign } from "@/types/api";
 
@@ -61,7 +63,10 @@ function BrandDashboard() {
 
   return (
     <>
-      <h1>Your campaigns</h1>
+      <PageHeader
+        title="Your campaigns"
+        subtitle="Fund attention. Pay for the views that land."
+      />
 
       <CreateCampaignForm onCreated={reload} />
 
@@ -69,9 +74,20 @@ function BrandDashboard() {
         <h2>Campaigns</h2>
 
         {error !== null && <ErrorMessage error={error} />}
-        {campaigns === null && error === null && <Spinner label="Loading campaigns…" />}
+        {campaigns === null && error === null && (
+          <>
+            <p className="visually-hidden" role="status">
+              Loading campaigns…
+            </p>
+            <CampaignCardSkeleton />
+            <CampaignCardSkeleton />
+          </>
+        )}
         {campaigns !== null && campaigns.length === 0 && (
-          <p className="muted">No campaigns yet. Create your first one above.</p>
+          <EmptyState
+            title="No campaigns yet"
+            description="Create your first campaign above to start funding creators."
+          />
         )}
         {campaigns !== null &&
           campaigns.map((campaign) => (

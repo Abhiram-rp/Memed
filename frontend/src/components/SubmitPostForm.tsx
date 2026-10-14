@@ -30,6 +30,8 @@ export default function SubmitPostForm({
   const [clientError, setClientError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
+  const inputId = `post-url-${campaign.id}`;
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
 
@@ -58,23 +60,28 @@ export default function SubmitPostForm({
 
   return (
     <form className="submit-post-form" onSubmit={handleSubmit}>
+      <label className="submit-post-label" htmlFor={inputId}>
+        Post URL
+      </label>
       <div className="inline-field">
         <input
+          id={inputId}
           type="text"
           value={postUrl}
           onChange={(event) => setPostUrl(event.target.value)}
           placeholder={PLACEHOLDER[campaign.platform]}
-          aria-label={`Post URL for ${campaign.name}`}
           disabled={submitting}
+          aria-invalid={clientError !== null}
+          aria-describedby={clientError !== null ? `${inputId}-error` : undefined}
         />
         <button type="submit" disabled={submitting}>
-          {submitting ? "Submitting…" : "Submit"}
+          {submitting ? "Submitting…" : "Submit post"}
         </button>
       </div>
 
       {clientError !== null && (
         <div className="error" role="alert">
-          <p>{clientError}</p>
+          <p id={`${inputId}-error`}>{clientError}</p>
         </div>
       )}
       {error !== null && <ErrorMessage error={error} />}

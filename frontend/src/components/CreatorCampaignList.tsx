@@ -8,10 +8,11 @@
  */
 
 import { useEffect, useState } from "react";
+import CampaignCardSkeleton from "@/components/CampaignCardSkeleton";
+import EmptyState from "@/components/EmptyState";
 import ErrorMessage from "@/components/ErrorMessage";
 import MilestoneLadder from "@/components/MilestoneLadder";
 import Money from "@/components/Money";
-import Spinner from "@/components/Spinner";
 import StatusBadge from "@/components/StatusBadge";
 import SubmitPostForm from "@/components/SubmitPostForm";
 import { api } from "@/lib/api";
@@ -80,16 +81,30 @@ export default function CreatorCampaignList({
       </div>
 
       {error !== null && <ErrorMessage error={error} />}
-      {data === null && error === null && <Spinner label="Loading campaigns…" />}
+      {data === null && error === null && (
+        <>
+          <p className="visually-hidden" role="status">
+            Loading campaigns…
+          </p>
+          <CampaignCardSkeleton />
+          <CampaignCardSkeleton />
+        </>
+      )}
       {data !== null && data.items.length === 0 && (
-        <p className="muted">No live campaigns right now.</p>
+        <EmptyState
+          title="No live campaigns right now"
+          description="New campaigns appear here as brands launch them. Check back soon."
+        />
       )}
 
       {data !== null &&
         data.items.map((campaign) => (
           <article className="card" key={campaign.id}>
-            <div className="row-between">
-              <h3 className="card-title">{campaign.name}</h3>
+            <div className="row-between campaign-head">
+              <div>
+                <h3 className="card-title">{campaign.name}</h3>
+                <p className="campaign-meta muted">{campaign.brand?.name ?? "Brand"}</p>
+              </div>
               <div className="row">
                 <span className="badge badge-gray">
                   {campaign.platform === "instagram" ? "Instagram" : "YouTube"}
@@ -98,11 +113,17 @@ export default function CreatorCampaignList({
               </div>
             </div>
 
-            <p className="muted">
-              {campaign.brand?.name ?? "Brand"} · Remaining <Money value={campaign.remaining} />
-            </p>
+            <div className="campaign-remaining">
+              <span className="budget-label">Remaining budget</span>
+              <span className="campaign-remaining-value display">
+                <Money value={campaign.remaining} />
+              </span>
+            </div>
 
-            <MilestoneLadder milestones={campaign.milestones} />
+            <div className="campaign-ladder">
+              <h4>Milestones</h4>
+              <MilestoneLadder milestones={campaign.milestones} />
+            </div>
 
             <SubmitPostForm campaign={campaign} onSubmitted={onRefresh} />
           </article>

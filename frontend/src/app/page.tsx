@@ -23,7 +23,7 @@ export default function Home() {
   }, [loading, user, router]);
 
   return (
-    <main className="container">
+    <main id="main-content" className="container gate">
       <Spinner />
     </main>
   );

@@ -35,7 +35,11 @@ export default function ProtectedRoute({ role, children }: { role: Role; childre
   }, [loading, user, role, router]);
 
   if (loading || user === null || user.role !== role) {
-    return <Spinner />;
+    return (
+      <div id="main-content" className="container gate">
+        <Spinner />
+      </div>
+    );
   }
 
   return <>{children}</>;

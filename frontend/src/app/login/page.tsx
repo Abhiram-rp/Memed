@@ -75,63 +75,86 @@ export default function LoginPage() {
   }
 
   if (loading) {
-    return <Spinner label="Checking your session…" />;
+    return (
+      <main id="main-content" className="auth-page">
+        <Spinner label="Checking your session…" />
+      </main>
+    );
   }
 
   return (
-    <main className="container">
-      <h1>Log in</h1>
-
-      <form className="card" onSubmit={handleSubmit} noValidate>
-        <div className="field">
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-          {fieldErrors.email !== undefined && <p className="error">{fieldErrors.email}</p>}
+    <main id="main-content" className="auth-page">
+      <div className="auth-panel">
+        <div className="auth-head">
+          <span className="auth-wordmark">Meme&apos;d</span>
+          <p className="auth-tagline">Turn views into payouts.</p>
         </div>
 
-        <div className="field">
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-          {fieldErrors.password !== undefined && <p className="error">{fieldErrors.password}</p>}
-        </div>
+        <form className="card auth-card" onSubmit={handleSubmit} noValidate>
+          <h1 className="auth-title">Log in</h1>
 
-        {formError !== null && (
-          <div className="error" role="alert">
-            <p>{formError}</p>
-            {details.length > 0 && (
-              <ul>
-                {details.map((detail) => (
-                  <li key={`${detail.path}:${detail.message}`}>
-                    {detail.path}: {detail.message}
-                  </li>
-                ))}
-              </ul>
+          <div className="field">
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              aria-invalid={fieldErrors.email !== undefined}
+              aria-describedby={fieldErrors.email !== undefined ? "email-error" : undefined}
+            />
+            {fieldErrors.email !== undefined && (
+              <p className="error" id="email-error">
+                {fieldErrors.email}
+              </p>
             )}
           </div>
-        )}
 
-        <button type="submit" disabled={submitting}>
-          {submitting ? "Signing in..." : "Log in"}
-        </button>
-      </form>
+          <div className="field">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              aria-invalid={fieldErrors.password !== undefined}
+              aria-describedby={fieldErrors.password !== undefined ? "password-error" : undefined}
+            />
+            {fieldErrors.password !== undefined && (
+              <p className="error" id="password-error">
+                {fieldErrors.password}
+              </p>
+            )}
+          </div>
 
-      <p className="muted">
-        No account yet? <Link href="/signup">Sign up</Link>
-      </p>
+          {formError !== null && (
+            <div className="error" role="alert">
+              <p>{formError}</p>
+              {details.length > 0 && (
+                <ul>
+                  {details.map((detail) => (
+                    <li key={`${detail.path}:${detail.message}`}>
+                      {detail.path}: {detail.message}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          <button type="submit" className="auth-submit" disabled={submitting}>
+            {submitting ? "Signing in..." : "Log in"}
+          </button>
+        </form>
+
+        <p className="auth-switch muted">
+          No account yet? <Link href="/signup">Sign up</Link>
+        </p>
+      </div>
     </main>
   );
 }
