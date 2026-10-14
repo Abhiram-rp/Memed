@@ -17,7 +17,7 @@ const envSchema = z
     CORS_ORIGIN: z.string().optional(),
     REDIS_URL: z.string().min(1).optional(),
     CAMPAIGN_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(30),
-    SPIKE_MIN_DELTA: z.coerce.number().int().nonnegative().default(10000),
+    SPIKE_MIN_DELTA: z.coerce.number().int().positive().default(10000),
     SPIKE_RATE_PER_MIN: z.coerce.number().positive().default(1000),
   })
   .superRefine((value, ctx) => {
