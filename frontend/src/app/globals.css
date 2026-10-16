@@ -1512,6 +1512,55 @@ tbody tr:hover {
   }
 }
 
+/* --- Tabs: Live campaigns / My submissions --- */
+.tabs {
+  margin-top: var(--space-5);
+}
+
+.tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--space-4);
+}
+
+.tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--muted);
+  font-weight: 600;
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: -1px;
+}
+
+.tab:hover:not(:disabled),
+.tab:active:not(:disabled) {
+  background: none;
+  color: var(--text);
+}
+
+.tab--active,
+.tab--active:hover:not(:disabled) {
+  color: var(--accent-text);
+  border-bottom-color: var(--accent);
+}
+
+.tabpanel:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
+/* Right-aligned row of actions at the top of a tab panel. */
+.panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-3);
+}
+
 /* ================= 21. LOADING, EMPTY STATES & MOTION ==================== */
 
 /* --- Skeleton composition helpers --- */
