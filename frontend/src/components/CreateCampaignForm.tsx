@@ -200,6 +200,9 @@ export default function CreateCampaignForm({ onCreated }: { onCreated: () => voi
           {values.milestones.map((row, index) => (
             <div className="milestone-row" key={index}>
               <div className="milestone-cell">
+                <span className="milestone-label" aria-hidden="true">
+                  Views
+                </span>
                 <input
                   id={`views-${index}`}
                   type="number"
@@ -222,6 +225,9 @@ export default function CreateCampaignForm({ onCreated }: { onCreated: () => voi
               </div>
 
               <div className="milestone-cell">
+                <span className="milestone-label" aria-hidden="true">
+                  Payout (₹)
+                </span>
                 <input
                   id={`payout-${index}`}
                   type="number"

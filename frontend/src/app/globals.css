@@ -1219,6 +1219,12 @@ tbody tr:hover {
   margin: var(--space-1) 0 0;
 }
 
+/* Per-field labels: hidden on desktop, where the header row shows the column
+   names, and revealed on mobile where that header row is hidden. */
+.milestone-label {
+  display: none;
+}
+
 @media (max-width: 560px) {
   .milestone-row {
     grid-template-columns: 1fr 1fr;
@@ -1226,6 +1232,14 @@ tbody tr:hover {
 
   .milestone-row--head {
     display: none;
+  }
+
+  .milestone-label {
+    display: block;
+    margin-bottom: var(--space-1);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
   }
 
   .milestone-remove {
