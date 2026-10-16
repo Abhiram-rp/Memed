@@ -1,16 +1,16 @@
 "use client";
 
 /**
- * Brand dashboard (spec Phase 7): the create-campaign form plus the brand's own
- * campaigns, newest first. Each card expands to load that campaign's
- * submissions on demand.
+ * Brand dashboard (spec Phase 7): the brand's own campaigns, newest first, plus
+ * a button that opens the dedicated create-campaign page. Each card expands to
+ * load that campaign's submissions on demand.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import BrandCampaignCard from "@/components/BrandCampaignCard";
 import CampaignCardSkeleton from "@/components/CampaignCardSkeleton";
-import CreateCampaignForm from "@/components/CreateCampaignForm";
 import EmptyState from "@/components/EmptyState";
 import ErrorMessage from "@/components/ErrorMessage";
 import PageHeader from "@/components/PageHeader";
@@ -31,7 +31,6 @@ export default function BrandDashboardPage() {
 function BrandDashboard() {
   const [campaigns, setCampaigns] = useState<Campaign[] | null>(null);
   const [error, setError] = useState<unknown>(null);
-  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,10 +54,6 @@ function BrandDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [reloadToken]);
-
-  const reload = useCallback(() => {
-    setReloadToken((token) => token + 1);
   }, []);
 
   return (
@@ -68,7 +63,11 @@ function BrandDashboard() {
         subtitle="Fund attention. Pay for the views that land."
       />
 
-      <CreateCampaignForm onCreated={reload} />
+      <div className="page-actions">
+        <Link href="/brand/campaigns/new" className="btn">
+          Create new campaign
+        </Link>
+      </div>
 
       <section>
         <h2>Campaigns</h2>
@@ -86,7 +85,7 @@ function BrandDashboard() {
         {campaigns !== null && campaigns.length === 0 && (
           <EmptyState
             title="No campaigns yet"
-            description="Create your first campaign above to start funding creators."
+            description="Create your first campaign to start funding creators."
           />
         )}
         {campaigns !== null &&
