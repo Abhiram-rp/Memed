@@ -71,8 +71,6 @@ export default function MySubmissions({
 
   return (
     <section>
-      <h2>My submissions</h2>
-
       {error !== null && <ErrorMessage error={error} />}
       {submissions === null && error === null && (
         <>

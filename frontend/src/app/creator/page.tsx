@@ -1,10 +1,11 @@
 "use client";
 
 /**
- * Creator dashboard (spec Phase 7): the earnings summary, the live-campaign
- * browser and the creator's own submissions. A single `refreshAll()` re-fetches
- * everything the page shows (earnings, the campaign page currently shown, and
- * the submissions) so child components can trigger a refresh.
+ * Creator dashboard (spec Phase 7): the earnings summary plus two tabs — the
+ * live-campaign browser and the creator's own submissions. Live campaigns is
+ * the default tab. A single `refreshAll()` re-fetches everything the page shows
+ * (earnings, the campaign page currently shown, and the submissions) so child
+ * components can trigger a refresh.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -16,6 +17,7 @@ import Money from "@/components/Money";
 import MySubmissions from "@/components/MySubmissions";
 import PageHeader from "@/components/PageHeader";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import Tabs from "@/components/Tabs";
 import { api } from "@/lib/api";
 import type { Earnings } from "@/types/api";
 
@@ -111,9 +113,22 @@ function CreatorDashboard() {
         )}
       </section>
 
-      <CreatorCampaignList refreshToken={refreshToken} onRefresh={refreshAll} />
-
-      <MySubmissions refreshToken={refreshToken} onRefresh={refreshAll} />
+      <Tabs
+        ariaLabel="Creator dashboard sections"
+        defaultTabId="campaigns"
+        tabs={[
+          {
+            id: "campaigns",
+            label: "Live campaigns",
+            content: <CreatorCampaignList refreshToken={refreshToken} onRefresh={refreshAll} />,
+          },
+          {
+            id: "submissions",
+            label: "My submissions",
+            content: <MySubmissions refreshToken={refreshToken} onRefresh={refreshAll} />,
+          },
+        ]}
+      />
     </>
   );
 }

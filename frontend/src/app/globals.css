@@ -317,6 +317,7 @@ button,
   color: var(--accent-ink);
   cursor: pointer;
   text-align: center;
+  text-decoration: none;
   white-space: nowrap;
   transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
     color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease),
@@ -326,6 +327,7 @@ button,
 button:hover:not(:disabled),
 .btn:hover:not(:disabled) {
   background: var(--accent-hover);
+  text-decoration: none;
 }
 
 button:active:not(:disabled),
@@ -821,6 +823,14 @@ tbody tr:hover {
   font-size: 15px;
 }
 
+/* Row of page-level actions (e.g. "Create new campaign") below the header. */
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
 /* ============================ 18. AUTH PAGES ============================= */
 
 .auth-page {
@@ -1209,6 +1219,12 @@ tbody tr:hover {
   margin: var(--space-1) 0 0;
 }
 
+/* Per-field labels: hidden on desktop, where the header row shows the column
+   names, and revealed on mobile where that header row is hidden. */
+.milestone-label {
+  display: none;
+}
+
 @media (max-width: 560px) {
   .milestone-row {
     grid-template-columns: 1fr 1fr;
@@ -1216,6 +1232,14 @@ tbody tr:hover {
 
   .milestone-row--head {
     display: none;
+  }
+
+  .milestone-label {
+    display: block;
+    margin-bottom: var(--space-1);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
   }
 
   .milestone-remove {
@@ -1486,6 +1510,55 @@ tbody tr:hover {
   .submissions-table .simulate-views input {
     max-width: none;
   }
+}
+
+/* --- Tabs: Live campaigns / My submissions --- */
+.tabs {
+  margin-top: var(--space-5);
+}
+
+.tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--space-4);
+}
+
+.tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--muted);
+  font-weight: 600;
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: -1px;
+}
+
+.tab:hover:not(:disabled),
+.tab:active:not(:disabled) {
+  background: none;
+  color: var(--text);
+}
+
+.tab--active,
+.tab--active:hover:not(:disabled) {
+  color: var(--accent-text);
+  border-bottom-color: var(--accent);
+}
+
+.tabpanel:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
+/* Right-aligned row of actions at the top of a tab panel. */
+.panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-3);
 }
 
 /* ================= 21. LOADING, EMPTY STATES & MOTION ==================== */

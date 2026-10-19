@@ -73,8 +73,7 @@ export default function CreatorCampaignList({
 
   return (
     <section>
-      <div className="row-between">
-        <h2>Live campaigns</h2>
+      <div className="panel-actions">
         <button type="button" className="secondary" onClick={onRefresh} disabled={loading}>
           Refresh
         </button>
