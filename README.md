@@ -121,7 +121,7 @@ memed/
 ├── docs/
 │   ├── MEMED_BUILD_SPEC.md      # authoritative build spec
 │   ├── PHASE_NOTES.md           # phase-by-phase working notes
-│   └── phase0_doc.md … phase6_doc.md   # per-phase code walkthroughs
+│   └── phase0_doc.md … phase7_doc.md   # per-phase code walkthroughs
 ├── backend/
 │   ├── package.json  tsconfig.json  jest.config.ts  .env.example  .dockerignore
 │   ├── src/
@@ -755,8 +755,9 @@ flagged        = increase >= minDelta AND ratePerMin >= ratePerMinThreshold
   simply expire after `JWT_EXPIRES_IN` (default `7d`).
 - **Spike flags cannot be reviewed or dismissed.** A flag is set once and is sticky; there is no
   endpoint or UI to inspect, confirm, or clear it.
-- **Open build TODO items.** The Redis campaign-list cache (Phase 8) and the Docker setup (Phase 10)
-  are not implemented, and the live demo URLs are still placeholders in this README.
+- **Open build TODO items.** The Redis campaign-list cache (Phase 8, a bonus) and Dockerisation
+  (Phase 10) are not implemented. The live demo URLs above are real and stable — this app is not
+  containerised, so it is deployed directly (Render backend, Vercel frontend).
 
 ---
 

@@ -24,15 +24,17 @@
 | 9 | Bonus: spike detection | ✅ Done |
 | 10 | Dockerisation | ❌ Not implemented |
 | 11 | Deployment (free tiers) | ✅ Done |
-| 12 | Documentation & final QA | 🚧 In progress |
+| 12 | Documentation & final QA | ✅ Done (only the Docker QA item is blocked, pending Phase 10) |
 
-> **Phase 11 (deployment) is complete.** The live URLs are recorded in the README under
-> "Live demo". The backend runs on a free tier, so the first request after a period of idle can
-> take roughly 30–60 seconds.
+> **Phase 11 (deployment) is complete.** The live URLs recorded in the README under "Live demo" are
+> real and stable — they are **not** placeholders (frontend on Vercel, backend on Render). The backend
+> runs on a free tier, so the first request after a period of idle can take roughly 30–60 seconds.
 >
 > **Not implemented:** Phase 8 (Redis campaign-list cache) and Phase 10 (Dockerisation) were not
 > built. `backend/src/services/cacheService.ts` is a deliberate no-op stub, and there are no
-> Dockerfiles or `docker-compose.yml` in the repository.
+> Dockerfiles or `docker-compose.yml` in the repository. The frontend is complete and working end to
+> end (Phase 7); it is deployed as a normal Next.js app on Vercel, which is why no container is
+> needed for the live demo.
 
 ---
 
@@ -102,7 +104,12 @@ Memed/
 │   ├── phase1_doc.md        ← Phase 1 code explained (domain core)
 │   ├── phase2_doc.md        ← Phase 2 code explained (db, models, app skeleton)
 │   ├── phase3_doc.md        ← Phase 3 code explained (auth)
-│   └── phase4_doc.md        ← Phase 4 code explained (brand campaigns)
+│   ├── phase4_doc.md        ← Phase 4 code explained (brand campaigns)
+│   ├── phase5_doc.md        ← Phase 5 code explained (creator browse / submit / earnings)
+│   ├── phase6_doc.md        ← Phase 6 code explained (transactional view update & payouts)
+│   └── phase7_doc.md        ← Phase 7 code explained (frontend)
+├── scripts/
+│   └── smoke-test.mjs       ← dependency-free production smoke test (Phase 11)
 ├── backend/
 │   ├── src/
 │   │   ├── app.ts           ← builds the Express app (no listen) (Phase 2)
@@ -112,24 +119,32 @@ Memed/
 │   │   │   ├── payout.ts
 │   │   │   ├── milestones.ts
 │   │   │   ├── postUrl.ts
-│   │   │   └── spike.ts
+│   │   │   └── spike.ts     ← stub in Phase 1, real rule from Phase 9
 │   │   ├── errors/          ← AppError + subclasses (Phase 2)
 │   │   ├── middleware/      ← asyncHandler, validate, notFound, errorHandler (Phase 2); authenticate, requireRole (Phase 3)
 │   │   ├── models/          ← User, Campaign, Submission + toJSON transform (Phase 2)
-│   │   ├── routes/          ← health + /api aggregator (Phase 2); auth (Phase 3); campaigns (Phase 4)
-│   │   ├── controllers/     ← thin HTTP handlers (Phase 4)
+│   │   ├── routes/          ← health + /api aggregator (Phase 2); auth (Phase 3); campaigns (Phase 4); submissions, creators (Phase 5); views (Phase 6)
+│   │   ├── controllers/     ← thin HTTP handlers (Phase 4+)
 │   │   ├── schemas/         ← zod request schemas (Phase 3)
-│   │   ├── validators/      ← zod request schemas (Phase 4)
-│   │   ├── services/        ← authService (Phase 3); campaignService, campaignDto, submissionDto (Phase 4)
+│   │   ├── validators/      ← zod request schemas (Phase 4–6)
+│   │   ├── services/        ← authService (Phase 3); campaignService, campaignDto, submissionDto (Phase 4);
+│   │   │                      submissionService, earningsService (Phase 5); viewUpdateService (Phase 6);
+│   │   │                      cacheService no-op stub (Phase 8 hook)
 │   │   └── types/           ← Express Request augmentation (Phase 3)
 │   ├── tests/
-│   │   ├── unit/            ← Phase 1 tests
-│   │   ├── integration/     ← health, models, errorHandling (Phase 2); auth (Phase 3); campaigns (Phase 4)
+│   │   ├── unit/            ← Phase 1 tests (+ env, schemas, DTOs, spike from later phases)
+│   │   ├── integration/     ← health, models, errorHandling (Phase 2); auth (Phase 3); campaigns (Phase 4);
+│   │   │                      submissions, earnings (Phase 5); viewUpdate (Phase 6); spike (Phase 9)
 │   │   ├── helpers/mongo.ts ← in-memory replica set helper (Phase 2)
 │   │   └── setup.ts
 │   ├── package.json  tsconfig.json  tsconfig.test.json  jest.config.ts
 │   ├── eslint.config.mjs  .prettierrc  .dockerignore  .env.example
-└── frontend/                ← empty placeholder (Phase 7)
+└── frontend/                ← complete Next.js app (Phase 7), deployed on Vercel
+    ├── src/app/             ← layout, page, login/, signup/, brand/, brand/campaigns/new/, creator/
+    ├── src/components/      ← AppShell, ProtectedRoute, forms, tables, badges, skeletons, Tabs, …
+    ├── src/context/         ← AuthContext (JWT in localStorage, D16)
+    ├── src/lib/             ← api.ts (typed fetch client), authStorage, campaignValidation, format
+    └── src/types/           ← mirrors the API types
 ```
 
 ---
@@ -138,10 +153,15 @@ Memed/
 
 | Branch | Contains | Status |
 |---|---|---|
-| `main` | Phase 0 | Unchanged (merge target) |
-| `backend-dev` | Phase 0 + Phase 1 + Phase 2 + Phase 3 + Phase 4 + docs | Phase 4 commits are local (10 ahead of `origin/backend-dev`); earlier phases pushed |
+| `main` | Everything through Phase 11 + the README/deployment docs | Merge target; up to date as of 2026-10-14 |
+| `backend-dev` | Backend phases 0–6 + docs | Merged into `main` (PRs #1, #3, #5, #6) |
+| `frontend-dev` | Frontend phases 7 + UI redesign | Merged into `main` (PRs #2, #4) |
+| `spike-detection` | Phase 9 spike detection | Merged into `main` (via the backend PRs) |
+| `feature/create-campaign-page` | Extra frontend polish (own create-campaign page, tabs) | Not merged — same tip as `feat/dockerise` |
+| `feat/dockerise` | **Currently checked out** — 4 frontend commits ahead of `main` | Despite the name it contains **no Docker files**; Phase 10 was never started |
 
-`backend-dev` is meant to be reviewed before merging into `main`.
+All phase work is merged; the only commits not yet on `main` are the four recent frontend UI
+improvements on `feat/dockerise`.
 
 ---
 
@@ -160,7 +180,7 @@ server yet.
 | `backend/eslint.config.mjs` | Style/lint rules (flags unused code, discourages `any`). |
 | `backend/.prettierrc` | Auto-formatting rules (single quotes, semicolons, 100-char lines). |
 | `backend/.env.example` | Template listing every setting the server needs; copy to `.env` locally. |
-| `backend/.dockerignore` | Used in Phase 10 so Docker doesn't copy junk. |
+| `backend/.dockerignore` | Prepared for Phase 10 (Docker) so containers wouldn't copy junk; **unused today**, since Docker was never built. |
 | `backend/tests/setup.ts` | Injects fake settings before tests run, so importing config doesn't crash. |
 
 **The one piece of real code in Phase 0:** `backend/src/config/env.ts`.
@@ -227,11 +247,14 @@ globally unique).
   to the *same* form `https://youtube.com/watch?v=<id>` (so one video can't be double-submitted).
 - Rejects wrong-platform links, non-http(s) URLs, malformed URLs and missing ids.
 
-### 7.4 `spike.ts` — a placeholder (bonus)
+### 7.4 `spike.ts` — spike detection (bonus, Phase 9)
 
-Detects suspiciously fast view growth. Currently a **stub**: it exports the types and a
-`detectSpike()` that always returns `{ flagged: false }`. The real rule lands in Phase 9. A spike is
-only ever *flagged* — it never blocks or reduces a payout.
+Detects suspiciously fast view growth. It was a stub through Phases 1–8; **Phase 9 implemented the
+real rule**: flag when the view gain is `>= SPIKE_MIN_DELTA` (default 10,000) **and** the rate is
+`>= SPIKE_RATE_PER_MIN` (default 1,000 views/min), with the elapsed time floored at one minute. A
+spike is only ever *flagged* — it never blocks or reduces a payout, and the flag is set once and
+never cleared. Covered by unit tests plus 10 integration tests in
+`tests/integration/spike.test.ts`.
 
 ### 7.5 Tests & coverage (`backend/tests/unit/`)
 
@@ -340,11 +363,12 @@ build + lint clean.
 | `npm run dev` | Starts the API (needs a MongoDB **replica set** reachable at `MONGODB_URI`). |
 | `npm start` | Runs the compiled `dist/server.js` (after `npm run build`). |
 
-`GET /health` is live (try `curl http://localhost:4000/health`). Auth is live too:
-`POST /api/auth/signup`, `POST /api/auth/login`, `GET /api/auth/me` (Bearer token). Brand
-campaigns are live: `POST /api/campaigns`, `GET /api/campaigns/mine`, `GET /api/campaigns/:id`,
-`GET /api/campaigns/:id/submissions` (all brand-only). Submissions and creator endpoints arrive
-in Phase 5.
+`GET /health` is live (try `curl http://localhost:4000/health`). The whole API surface is live:
+auth (`POST /api/auth/signup`, `POST /api/auth/login`, `GET /api/auth/me`), brand campaigns
+(`POST /api/campaigns`, `GET /api/campaigns/mine`, `GET /api/campaigns/:id`,
+`GET /api/campaigns/:id/submissions`), creator endpoints (`GET /api/campaigns`,
+`POST /api/submissions`, `GET /api/submissions/mine`, `GET /api/creators/me/earnings`) and the
+public `PATCH /api/submissions/:id/views` payout trigger.
 
 Integration tests boot an in-memory MongoDB replica set (`mongodb-memory-server`). The first run
 downloads the mongod binary (~330 MB) into `~/.cache/mongodb-binaries`; later runs are fast.
@@ -381,13 +405,17 @@ downloads the mongod binary (~330 MB) into `~/.cache/mongodb-binaries`; later ru
 
 ## 14. What's next
 
-Still to build, in order (see the spec for detail):
+Almost everything in the spec is built. Remaining work (see the spec for detail):
 
-- **Phase 5:** creator browse / submit / earnings.
-- **Phase 6:** the `PATCH /api/submissions/:id/views` endpoint running payout math in a DB
-  transaction.
-- **Phase 7:** frontend. **Phase 8:** Redis cache. **Phase 9:** real spike detection.
-  **Phase 10:** Docker. **Phase 11:** deploy. **Phase 12:** docs & final QA.
+- **Phase 8 (bonus):** the Redis campaign-list cache — `cacheService.ts` is already wired in as a
+  no-op hook, so this is additive (`config/redis.ts`, version-key invalidation, `X-Cache` header).
+- **Phase 10:** Dockerisation — no `Dockerfile`s or `docker-compose.yml` exist yet.
+- **Phase 12 QA leftovers:** the checklist item *"docker compose up works from a clean clone"*
+  cannot be ticked until Phase 10 lands. Everything else in the checklist passes (tests, builds,
+  coverage, docs).
 
-Running the API locally needs a MongoDB **replica set** (Atlas M0 or the Docker compose Mongo);
-the test suite uses an in-memory one, so tests need nothing external.
+Phases 0–7, 9 and 11 are complete, and the app is live: the frontend works end to end on Vercel and
+the API runs on Render (see the README "Live demo" URLs).
+
+Running the API locally needs a MongoDB **replica set** (e.g. Atlas M0, or any local `mongod`
+started with `--replSet`); the test suite uses an in-memory one, so tests need nothing external.
