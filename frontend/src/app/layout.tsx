@@ -22,7 +22,7 @@ const sans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Meme'd",
+  title: "Creator Marketplace for Brand Campaigns | Meme'd",
   description:
     "Meme'd — a creator marketplace where brands run campaigns and creators get paid per milestone.",
 };
